@@ -775,7 +775,7 @@
               <li>Оноо: мэдлэг, ойлголт 6, чадвар, хэрэглээ 7 — нийт 100 оноо.</li>
               <li>Дуусгасны дараа түвшин бүрийн гүйцэтгэл, тохирох анги, зөвлөмж гарна. +30 XP.</li>
             </ul>
-            <button type="button" class="btn btn-grad" id="begin" style="margin-top:12px">Оношлогоо эхлүүлэх</button>
+            <button type="button" class="btn btn-grad" id="begin" style="margin-top:12px">Сорил эхлэх</button>
           </div></div>
           <div class="card"><div class="card-head">Сүүлийн дүн</div><div class="card-body">${last ? `<div class="metric-value">${last.percent}%</div><div class="metric-label">${last.placement}-р ангийн түвшин · ${S.shortDate(last.at)}</div>` : emptyBox("Оношлогоо өгөөгүй", "Эхний оношлогоогоо өгөөд түвшнээ мэдээрэй.")}</div></div>
         </div>`;

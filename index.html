@@ -4,92 +4,64 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Математикийн багшийн туслах</title>
-  <meta name="description" content="6–9-р ангийн математик. Оноо цуглуулж, Battle Mood-оор өрсөлдөнө.">
+  <meta name="description" content="6–9-р ангийн математик. Хичээл, сорил, даалгавар.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/css/app.css?v=switch">
+  <link rel="stylesheet" href="/css/app.css?v=imath">
 </head>
-<body>
-  <div class="shell">
-    <aside class="sidebar" id="sidebar">
-      <p class="sidebar-title">Математикийн багшийн туслах</p>
-      <nav class="nav" aria-label="Үндсэн цэс">
-        <a class="active" href="/"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>Нүүр хуудас</a>
-        <a href="/student/lesson"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5V4.5A2.5 2.5 0 0 1 6.5 2z"/></svg>Цахим контент</a>
-        <a href="/student/assignments"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5V4.5A2.5 2.5 0 0 1 6.5 2z"/></svg>Даалгаврын сан</a>
-        <a href="/student/assessment"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Сорил</a>
-        <a href="/student/battle"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h8l-1 8 10-12h-8l1-8z"/></svg>Battle Mood</a>
-        <a href="/teacher/dashboard"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h6"/><path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1z"/><path d="M7 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1"/></svg>Багшийн самбар</a>
-      </nav>
-    </aside>
-    <div class="main">
-      <header class="topbar">
-        <div class="actions">
-          <button class="menu-btn" type="button" id="menu-btn" aria-label="Цэс">☰</button>
-          <div class="topbar-title">Нүүр хуудас</div>
-        </div>
-      </header>
-      <main class="content">
-        <nav class="part-switch" aria-label="Хэсэг солих">
-          <a href="/student/lesson">Хичээл</a>
-          <a href="/student/assignments">Даалгаврын сан</a>
-          <a href="/teacher/content">Материал оруулах</a>
-        </nav>
-        <div class="home-hero">
-          <div class="home-logo">
-            <img src="/logo.gif" alt="Математикийн багшийн туслах">
-          </div>
-          <div>
-            <p class="main-header">Математикийн ертөнцөд тавтай морил!</p>
-            <div class="goal-text">
-              Энэ сайт <b>6–9-р ангийн</b> сурагчдад математикийн хоцрогдол арилгах,
-              цахим цагаа зөв өнгөрүүлэхэд зориулагдсан. Оноо цуглуулж, Battle Mood-оор
-              өрсөлдөнө. <b>6, 7, 8, 9-р ангийн</b> сэдэв, бодлого, оношлогоо бүгд
-              сургалтын хөтөлбөрийн дагуу. Багшийн даалгавар, сурагчийн дүн хадгалагдана.
-            </div>
-          </div>
-        </div>
-        <p class="home-caption">Одоогийн түвшин: 6–9-р анги</p>
-        <div class="home-cards">
-          <a class="feature" href="/student/lesson">
-            <div class="custom-card">
-              <div class="card-icon">📺</div>
-              <div class="card-title">Цахим контент</div>
-              <p>Сэдэвчилсэн тайлбар</p>
-            </div>
-            <span class="st-btn">Цахим контент</span>
-          </a>
-          <a class="feature" href="/student/assignments">
-            <div class="custom-card">
-              <div class="card-icon">📚</div>
-              <div class="card-title">Даалгаврын сан</div>
-              <p>Бодлого, түвшин</p>
-            </div>
-            <span class="st-btn">Даалгаврын сан</span>
-          </a>
-          <a class="feature" href="/student/assessment">
-            <div class="custom-card">
-              <div class="card-icon">📝</div>
-              <div class="card-title">Сорил</div>
-              <p>Мэдлэг шалгах</p>
-            </div>
-            <span class="st-btn">Сорил</span>
-          </a>
-          <a class="feature" href="/student/battle">
-            <div class="custom-card">
-              <div class="card-icon">⚔️</div>
-              <div class="card-title">Battle Mood</div>
-              <p>Оноо, тулаан</p>
-            </div>
-            <span class="st-btn">Battle Mood</span>
-          </a>
-        </div>
-      </main>
+<body class="ih">
+  <header class="ih-bar">
+    <a class="ih-logo" href="/">Математикийн<br>багшийн туслах</a>
+    <nav class="ih-nav" aria-label="Үндсэн цэс">
+      <a href="/">Нүүр</a>
+      <a href="/student/assessment">Сорил</a>
+      <a href="/student/lesson">Хичээл</a>
+      <a href="/teacher/dashboard">Багш</a>
+      <a class="ih-enter" href="/student/lesson">Орох</a>
+    </nav>
+  </header>
+
+  <section class="ih-hero">
+    <p class="ih-kicker">6–9-р ангийн математик</p>
+    <h1>Математикийг сурах ганц арга бол <span>бодох</span>.</h1>
+    <div class="ih-doors">
+      <a class="ih-door" href="/student/assessment">
+        <span class="ih-door-ico">✓</span>
+        <strong>ОНЛАЙН СОРИЛ</strong>
+      </a>
+      <a class="ih-door" href="/student/lesson?tab=theory">
+        <span class="ih-door-ico">☰</span>
+        <strong>ОНЛАЙН ХИЧЭЭЛ</strong>
+      </a>
+      <a class="ih-door" href="/student/lesson?tab=task">
+        <span class="ih-door-ico">↻</span>
+        <strong>СУРТЛАА ДАВТ</strong>
+      </a>
     </div>
-  </div>
-  <script>
-    document.getElementById("menu-btn").addEventListener("click", () => {
-      document.getElementById("sidebar").parentElement.classList.toggle("nav-open");
-    });
-  </script>
+  </section>
+
+  <section class="ih-how">
+    <h2>Яаж явагддаг вэ?</h2>
+    <div class="ih-how-grid">
+      <article>
+        <h3>Онлайн сорил</h3>
+        <p>Сорилоо эхлүүлнэ. Дуусаад дүнгээ харна. Алдсан бодлогоо шалгаад бодолтыг уншина.</p>
+        <div class="ih-steps">
+          <a href="/student/assessment">Сорил эхлэх</a>
+          <a href="/student/stats">Дүн харах</a>
+          <a href="/student/assessment">Алдаа шалгах</a>
+          <a href="/student/lesson?tab=task">Бодолт</a>
+        </div>
+      </article>
+      <article>
+        <h3>Онлайн хичээл</h3>
+        <p>Цэснээс хичээлээ нээ. Эхлээд онол, дараа нь жишээ, тэгээд даалгавраа өөрөө бод.</p>
+        <div class="ih-steps">
+          <a href="/student/lesson?tab=theory">ОНОЛ</a>
+          <a href="/student/lesson?tab=example">ЖИШЭЭ</a>
+          <a href="/student/lesson?tab=task">ДААЛГАВАР</a>
+        </div>
+      </article>
+    </div>
+  </section>
 </body>
 </html>

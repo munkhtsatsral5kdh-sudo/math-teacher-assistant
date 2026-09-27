@@ -736,6 +736,60 @@ a.item { text-decoration: none; color: inherit; }
   .main-header { font-size: 28px; }
 }
 
+.ih { background: #f4f4f4; color: #222; }
+.ih-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 28px; background: #2f2f2f; color: #fff;
+}
+.ih-logo {
+  color: #fff; text-decoration: none; font-family: "Arial Black", Arial, sans-serif;
+  font-size: 16px; line-height: 1.15; letter-spacing: 0.02em;
+}
+.ih-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+.ih-nav a { color: #eee; text-decoration: none; font-size: 14px; font-weight: 700; }
+.ih-nav a:hover { color: #fff; }
+.ih-enter {
+  background: #004aad; color: #fff !important; border-radius: 6px; padding: 8px 14px;
+}
+.ih-hero {
+  background: #3a3a3a; color: #fff; text-align: center; padding: 64px 20px 56px;
+}
+.ih-kicker { margin: 0 0 10px; color: #d0d0d0; font-size: 14px; letter-spacing: 0.08em; }
+.ih-hero h1 {
+  margin: 0 auto 28px; max-width: 720px; font-size: 34px; line-height: 1.25;
+  font-family: "Arial Black", Arial, sans-serif; font-weight: 900;
+}
+.ih-hero h1 span { color: #ff4b4b; }
+.ih-doors { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; }
+.ih-door {
+  width: 170px; min-height: 150px; background: #fff; color: #222; text-decoration: none;
+  border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+}
+.ih-door:hover { transform: translateY(-2px); }
+.ih-door-ico {
+  width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
+  background: #e7f0fb; color: #004aad; font-size: 22px; font-weight: 800;
+}
+.ih-door strong { font-size: 14px; letter-spacing: 0.04em; }
+.ih-how { max-width: 980px; margin: 0 auto; padding: 36px 20px 64px; }
+.ih-how h2 { margin: 0 0 18px; color: #004aad; font-family: "Arial Black", Arial, sans-serif; }
+.ih-how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.ih-how article { background: #fff; border-radius: 16px; padding: 20px; border: 1px solid #eee; }
+.ih-how h3 { margin: 0 0 8px; color: #004aad; }
+.ih-how p { margin: 0 0 14px; color: #555; }
+.ih-steps { display: flex; flex-wrap: wrap; gap: 8px; }
+.ih-steps a {
+  text-decoration: none; background: #004aad; color: #fff; border-radius: 8px;
+  padding: 8px 12px; font-weight: 700; font-size: 14px;
+}
+.ih-steps a:hover { background: #003580; }
+@media (max-width: 800px) {
+  .ih-bar { flex-direction: column; align-items: flex-start; }
+  .ih-hero h1 { font-size: 26px; }
+  .ih-how-grid { grid-template-columns: 1fr; }
+}
+
 @media print {
   .sidebar, .topbar, .no-print, #toast-host { display: none !important; }
   .main { margin-left: 0; }
