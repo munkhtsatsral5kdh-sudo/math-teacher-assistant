@@ -30,7 +30,7 @@
 
   const view = document.getElementById("view");
   let cleanup = null;
-  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, ix1: {}, ix1Show: {} };
+  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, ix1: {}, ix1Show: {}, lessonPart: "theory", example: null };
 
   function getRank(xp) {
     if (xp >= 8000) return { name: "Mythical Glory", icon: "👑", next: null, nextXP: null, base: 8000 };
@@ -99,6 +99,8 @@
     if (topic) ui.topicKey = topic;
     const task = q.get("task");
     if (task) ui.task = { id: task, answers: {}, started: Date.now() };
+    const tab = q.get("tab");
+    if (tab === "theory" || tab === "example" || tab === "task") ui.lessonPart = tab;
   }
 
   function emptyBox(title, text, link) {
@@ -332,27 +334,53 @@
         ${done ? `<div class="actions" style="margin-top:14px"><button type="button" class="btn" id="again">🔄 Дахин дасгал хийх</button><a class="btn btn-ghost" href="/student/battle">⚡ Battle-д шалгах</a></div>` : ""}`;
     }
 
+    const part = ui.lessonPart || "theory";
+    const unit1 = topic.key === "9-0" || topic.key === "9-1";
+    const tabBtn = (id, label) => `<button type="button" class="${part === id ? "active" : ""}" data-part="${id}">${label}</button>`;
+    let panel;
+    if (part === "example") {
+      if (unit1 && window.IX1) {
+        const samples = [];
+        window.IX1.criteria.forEach((c) => { const p = c.levels[0] && c.levels[0].problems[0]; if (p) samples.push(p); });
+        panel = samples.map((p) => ix1Problem(p, "example")).join("") || emptyBox("Жишээ алга", "");
+      } else {
+        if (!ui.example || ui.example.topicKey !== topic.key) ui.example = { topicKey: topic.key, q: B.buildQuestions({ grade: st.grade, topicKey: topic.key, count: 1 })[0] };
+        panel = `<p class="hint">Жишээг бодолттой нь уншаад, дараа нь Даалгавар товчоор өөрөө бод.</p>${Q.questionCard(ui.example.q, 0, { reveal: true, picked: ui.example.q.answer, total: 1 })}`;
+      }
+    } else if (part === "task") {
+      panel = unit1 && window.IX1
+        ? `<p class="hint">Бодлогоо өөрөө бод. Дуусаад <b>Бодолт</b> дээр дарж зөв хариутай тулга.</p>${ix1Html("task")}`
+        : practiceHtml;
+    } else {
+      panel = `
+        <h3 style="font-size:14px;margin-bottom:6px">Суралцахуйн зорилт</h3>
+        <ul class="objectives">${topic.objectives.map((o) => `<li>${esc(o)}</li>`).join("")}</ul>
+        ${units.length ? `<h3 style="font-size:14px;margin:16px 0 8px">Онол</h3>${units.map((u) => `<div class="theory"><strong>${esc(u.name)}</strong>${esc(u.theory)}</div>`).join("")}` : ""}
+        <h3 style="font-size:14px;margin:16px 0 8px">Багшийн материал</h3>
+        ${mats.length ? mats.map((m) => `<div class="material"><div class="item-title">${esc(m.title)}</div><div class="item-sub">${S.shortDate(m.createdAt)}</div><div class="material-body">${esc(m.body)}</div>${m.link ? `<div style="margin-top:6px"><a href="${esc(m.link)}" target="_blank" rel="noopener">Холбоос нээх</a></div>` : ""}</div>`).join("") : `<p class="hint">Багш материал нийтлэхэд энд гарна.</p>`}`;
+    }
+
     view.innerHTML = `
       <div class="grid grid-1-2">
         <div class="card" style="align-self:start"><div class="card-head">${st.grade}-р анги · ${esc(B.unitName(topic.key) || "Нэгж")}</div><div class="card-body list topic-list">${list}</div></div>
         <div class="grid" style="align-content:start">
           <div class="card"><div class="card-head"><span>${esc(B.unitName(topic.key))} · ${esc(B.niceTitle(topic.title))}</span><span class="pill pill-purple">${esc(topic.level)}</span></div><div class="card-body">
-            <h3 style="font-size:14px;margin-bottom:6px">Суралцахуйн зорилт</h3>
-            <ul class="objectives">${topic.objectives.map((o) => `<li>${esc(o)}</li>`).join("")}</ul>
-            ${units.length ? `<h3 style="font-size:14px;margin:16px 0 8px">Товч онол</h3>${units.map((u) => `<div class="theory"><strong>${esc(u.name)}</strong>${esc(u.theory)}</div>`).join("")}` : ""}
+            <div class="seg" id="lesson-parts">${tabBtn("theory", "ОНОЛ")}${tabBtn("example", "ЖИШЭЭ")}${tabBtn("task", "ДААЛГАВАР")}</div>
+            <p class="hint">Эхлээд онолоо унш. Дараа нь жишээг хар. Тэгээд даалгавраа өөрөө бод.</p>
+            ${panel}
           </div></div>
-          <div class="card"><div class="card-head">📘 Багшийн материал</div><div class="card-body">${mats.length ? mats.map((m) => `<div class="material"><div class="item-title">${esc(m.title)}</div><div class="item-sub">${S.shortDate(m.createdAt)}</div><div class="material-body">${esc(m.body)}</div>${m.link ? `<div style="margin-top:6px"><a href="${esc(m.link)}" target="_blank" rel="noopener">🔗 Холбоос нээх</a></div>` : ""}</div>`).join("") : emptyBox("Материал алга", "Багш энэ сэдвээр материал нийтлэхэд энд гарна.")}</div></div>
-          <div class="card"><div class="card-head">✏️ Дасгал</div><div class="card-body">${practiceHtml}</div></div>
         </div>
       </div>`;
 
-    view.querySelectorAll("[data-topic]").forEach((b) => b.addEventListener("click", () => { ui.topicKey = b.dataset.topic; ui.practice = null; renderLesson(); }));
+    view.querySelectorAll("[data-part]").forEach((b) => b.addEventListener("click", () => { ui.lessonPart = b.dataset.part; renderLesson(); }));
+    view.querySelectorAll("[data-topic]").forEach((b) => b.addEventListener("click", () => { ui.topicKey = b.dataset.topic; ui.practice = null; ui.lessonPart = "theory"; renderLesson(); }));
+    if (part === "task" && unit1) bindIx1();
     const startBtn = document.getElementById("start-practice");
     const begin = () => { ui.practice = { topicKey: topic.key, questions: B.buildQuestions({ grade: st.grade, topicKey: topic.key, count: 5 }), answers: {}, saved: false }; renderLesson(); };
     if (startBtn) startBtn.addEventListener("click", begin);
     const again = document.getElementById("again");
     if (again) again.addEventListener("click", begin);
-    view.querySelectorAll(".opt").forEach((b) => b.addEventListener("click", () => {
+    view.querySelectorAll(".opt[data-q]").forEach((b) => b.addEventListener("click", () => {
       const p = ui.practice;
       const i = Number(b.dataset.q);
       if (!p || p.answers[i] != null) return;
@@ -372,19 +400,21 @@
   }
 
   /* ---------------- Tasks ---------------- */
-  function ix1Problem(p) {
+  function ix1Problem(p, mode) {
     const picked = ui.ix1[p.n];
-    const shown = ui.ix1Show[p.n];
+    const shown = mode === "example" || ui.ix1Show[p.n];
     const text = esc(p.text).replaceAll("\n", "<br>");
-    const choices = p.options.length
-      ? `<div class="opts" style="margin-top:10px">${p.options.map((o) => `<button type="button" class="opt ${picked === o.letter ? "picked" : ""}" data-ix="${p.n}" data-letter="${o.letter}"><span class="key">${o.letter}</span><span>${esc(o.text)}</span></button>`).join("")}</div><button type="button" class="btn btn-sm" data-check="${p.n}" style="margin-top:10px">Шалгах</button>`
-      : `<button type="button" class="btn btn-ghost btn-sm" data-show="${p.n}" style="margin-top:10px">Хариу харах</button>`;
-    const mark = shown && p.correct ? (picked === p.correct ? `<span class="pill pill-green">Зөв</span>` : `<span class="pill pill-red">Буруу. Зөв нь ${esc(p.correct)}</span>`) : "";
-    const answer = shown ? `<div class="theory" style="margin-top:8px"><strong>Хариу.</strong> ${esc(p.answer).replaceAll("\n", "<br>")}${p.wrong ? `<div class="hint" style="margin-top:6px">Анхаарах алдаа: ${esc(p.wrong)}</div>` : ""}</div>` : "";
+    const choices = mode === "example"
+      ? ""
+      : p.options.length
+        ? `<div class="opts" style="margin-top:10px">${p.options.map((o) => `<button type="button" class="opt ${picked === o.letter ? "picked" : ""}" data-ix="${p.n}" data-letter="${o.letter}"><span class="key">${o.letter}</span><span>${esc(o.text)}</span></button>`).join("")}</div><button type="button" class="btn btn-sm" data-check="${p.n}" style="margin-top:10px">Шалгах</button>`
+        : `<button type="button" class="btn btn-ghost btn-sm" data-show="${p.n}" style="margin-top:10px">Бодолт</button>`;
+    const mark = shown && p.correct && mode !== "example" ? (picked === p.correct ? `<span class="pill pill-green">Зөв</span>` : `<span class="pill pill-red">Буруу. Зөв нь ${esc(p.correct)}</span>`) : "";
+    const answer = shown ? `<div class="theory" style="margin-top:8px"><strong>Бодолт.</strong> ${esc(p.answer).replaceAll("\n", "<br>")}${p.wrong ? `<div class="hint" style="margin-top:6px">Анхаарах алдаа: ${esc(p.wrong)}</div>` : ""}</div>` : "";
     return `<div class="material" id="ix-${p.n}"><div class="actions" style="justify-content:space-between"><div class="item-title">${p.n}. ${text}</div>${mark}</div>${choices}${answer}</div>`;
   }
 
-  function ix1Html() {
+  function ix1Html(mode) {
     const bank = window.IX1;
     if (!bank) return "";
     return bank.criteria.map((c) => `
@@ -392,7 +422,7 @@
         <div class="card-head">${esc(c.name)}</div>
         <div class="card-body">
           ${c.outcome ? `<p class="hint" style="margin-top:0">${esc(c.outcome)}</p>` : ""}
-          ${c.levels.map((lv) => `<div class="nav-group" style="margin:14px 0 6px">${esc(lv.name)}</div>${lv.note ? `<p class="hint">${esc(lv.note)}</p>` : ""}${lv.problems.map(ix1Problem).join("")}`).join("")}
+          ${c.levels.map((lv) => `<div class="nav-group" style="margin:14px 0 6px">${esc(lv.name)}</div>${lv.note ? `<p class="hint">${esc(lv.note)}</p>` : ""}${lv.problems.map((p) => ix1Problem(p, mode)).join("")}`).join("")}
         </div>
       </div>`).join("");
   }
@@ -404,7 +434,8 @@
     bank.criteria.forEach((c) => c.levels.forEach((lv) => lv.problems.forEach((p) => { byN[p.n] = p; })));
     const keep = () => {
       const y = window.scrollY;
-      renderTasks();
+      if (currentView() === "lesson") renderLesson();
+      else renderTasks();
       window.scrollTo(0, y);
     };
     view.querySelectorAll("[data-letter]").forEach((b) => b.addEventListener("click", () => {
@@ -436,11 +467,10 @@
       ? `<div class="card mb"><div class="card-head">Багшийн нийтэлсэн материал</div><div class="card-body list">${teacherMats.map((m) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(m.topicKey)}"><div class="item-icon">📘</div><div class="item-main"><div class="item-title">${esc(m.title)}</div><div class="item-sub">${esc(B.unitName(m.topicKey))} · ${esc(B.topicTitle(m.topicKey))}</div></div></a>`).join("")}</div></div>`
       : "";
     if (!st.classId) {
-      const bank = Number(st.grade) === 9 && window.IX1
-        ? `<div class="view-head"><h1>9-р ангийн даалгаврын сан</h1><p>${esc(window.IX1.title)}. ${esc(window.IX1.subtitle)}.</p></div>${matsCard}${ix1Html()}`
-        : `<div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Сэдвээ сонгоход хичээлийн бодлого нээгдэнэ. 9-р ангийн 1-р нэгжийн 90 бодлого ангиа 9 болгоход гарна.</p></div>${matsCard}<div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
-      view.innerHTML = bank;
-      bindIx1();
+      view.innerHTML = `
+        <div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Сэдэв дээр дарвал тухайн хичээлийн даалгавар нээгдэнэ. Тэнд Онол, Жишээ, Даалгавар гэж шилжинэ.</p></div>
+        ${matsCard}
+        <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}&tab=task"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${t.key === "9-0" ? "90 бодлого · " : ""}${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
       return;
     }
     const all = myAssignments(data, st);
@@ -452,13 +482,11 @@
       return `<a class="item" href="/student/assignments?task=${encodeURIComponent(a.id)}"><div class="item-icon">${a.kind === "exam" ? "🧪" : "📝"}</div><div class="item-main"><div class="item-title">${esc(a.title)}</div><div class="item-sub">${a.kind === "exam" ? "Шалгалт" : "Даалгавар"} · ${a.questions.length} асуулт${a.minutes ? ` · ${a.minutes} минут` : ""}${a.topicKey ? ` · ${esc(B.topicTitle(a.topicKey))}` : ""}</div></div>${sub ? `<span class="pill ${S.scoreClass(sub.percent)}">${sub.percent}%</span>` : `<span class="pill ${due.urgent ? "pill-red" : "pill-blue"}">${due.label}</span>`}</a>`;
     };
     view.innerHTML = `
-      ${Number(st.grade) === 9 ? `<div class="view-head"><h1>9-р ангийн даалгаврын сан</h1><p>${esc(window.IX1.title)}. ${esc(window.IX1.subtitle)}.</p></div>${ix1Html()}` : ""}
       ${matsCard}
       <div class="grid grid-2">
         <div class="card"><div class="card-head">Хийх (${pending.length})</div><div class="card-body list">${pending.length ? pending.map(row).join("") : emptyBox("Хийх даалгавар алга", "Багш шинэ даалгавар илгээхэд энд гарна.")}</div></div>
         <div class="card"><div class="card-head">Илгээсэн (${done.length})</div><div class="card-body list">${done.length ? done.map(row).join("") : emptyBox("Илгээсэн даалгавар алга", "Даалгавраа хийж илгээхэд дүн нь энд гарна.")}</div></div>
       </div>`;
-    bindIx1();
   }
 
   function renderTaskRunner(data, st, task) {
