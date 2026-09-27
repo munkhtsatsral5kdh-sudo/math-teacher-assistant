@@ -346,6 +346,7 @@
             <label class="field">Хөтөлбөрийн сэдэв<select name="topicKey">${Q.topicOptions(grade)}</select></label>
             <label class="field">Агуулга<textarea name="body" rows="7" placeholder="Тайлбар, жишээ, томьёо…"></textarea></label>
             <label class="field">Видео / холбоос <span class="hint">заавал биш, https://…</span><input name="link" placeholder="https://www.youtube.com/…"></label>
+            <p class="hint">Нийтэлсэн материал сурагчийн Хичээл болон Даалгаврын сан дээр энэ анги, энэ сэдвийн доор гарна.</p>
             <div class="actions"><button class="btn" type="submit">📤 Нийтлэх</button></div>
             <p class="error" id="material-error" role="alert"></p>
           </form>

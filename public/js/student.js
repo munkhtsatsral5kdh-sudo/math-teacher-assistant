@@ -116,7 +116,7 @@
 
   function myMaterials(data, st, topicKey = null) {
     return data.materials
-      .filter((m) => m.grade === st.grade && (!m.classId || m.classId === st.classId) && (!topicKey || m.topicKey === topicKey))
+      .filter((m) => Number(m.grade) === Number(st.grade) && (!st.classId || !m.classId || m.classId === st.classId) && (!topicKey || m.topicKey === topicKey))
       .sort((x, y) => new Date(y.createdAt) - new Date(x.createdAt));
   }
 
@@ -379,10 +379,14 @@
     if (ui.task && !task) ui.task = null;
     if (task) return renderTaskRunner(data, st, task);
 
+    const teacherMats = myMaterials(data, st);
+    const matsCard = teacherMats.length
+      ? `<div class="card mb"><div class="card-head">Багшийн нийтэлсэн материал</div><div class="card-body list">${teacherMats.map((m) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(m.topicKey)}"><div class="item-icon">📘</div><div class="item-main"><div class="item-title">${esc(m.title)}</div><div class="item-sub">${esc(B.unitName(m.topicKey))} · ${esc(B.topicTitle(m.topicKey))}</div></div></a>`).join("")}</div></div>`
+      : "";
     if (!st.classId) {
-      const topics = B.topicsOf(st.grade);
       view.innerHTML = `
-        <div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Сэдвээ сонгоход хичээлийн бодит бодлого нээгдэнэ. Багш бүлэгт даалгавар илгээвэл энд жагсаалтаар орно.</p></div>
+        <div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Багшийн материал, сэдэв, бодлого нэг хөтөлбөрөөр холбогдоно. Сэдэв дээр дарвал хичээл дээрх тайлбар, бодлого нээгдэнэ.</p></div>
+        ${matsCard}
         <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
       return;
     }
@@ -395,6 +399,7 @@
       return `<a class="item" href="/student/assignments?task=${encodeURIComponent(a.id)}"><div class="item-icon">${a.kind === "exam" ? "🧪" : "📝"}</div><div class="item-main"><div class="item-title">${esc(a.title)}</div><div class="item-sub">${a.kind === "exam" ? "Шалгалт" : "Даалгавар"} · ${a.questions.length} асуулт${a.minutes ? ` · ${a.minutes} минут` : ""}${a.topicKey ? ` · ${esc(B.topicTitle(a.topicKey))}` : ""}</div></div>${sub ? `<span class="pill ${S.scoreClass(sub.percent)}">${sub.percent}%</span>` : `<span class="pill ${due.urgent ? "pill-red" : "pill-blue"}">${due.label}</span>`}</a>`;
     };
     view.innerHTML = `
+      ${matsCard}
       <div class="grid grid-2">
         <div class="card"><div class="card-head">Хийх (${pending.length})</div><div class="card-body list">${pending.length ? pending.map(row).join("") : emptyBox("Хийх даалгавар алга", "Багш шинэ даалгавар илгээхэд энд гарна.")}</div></div>
         <div class="card"><div class="card-head">Илгээсэн (${done.length})</div><div class="card-body list">${done.length ? done.map(row).join("") : emptyBox("Илгээсэн даалгавар алга", "Даалгавраа хийж илгээхэд дүн нь энд гарна.")}</div></div>
