@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,560;7..72,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/app.css?v=switch">
 </head>
 <body>
   <div class="shell" id="shell">
@@ -51,7 +51,14 @@
           <div class="avatar" id="top-avatar" aria-hidden="true">МБ</div>
         </div>
       </header>
-      <main class="content" id="view" tabindex="-1"></main>
+      <main class="content">
+        <nav class="part-switch" aria-label="Хэсэг солих">
+          <a href="/student/lesson">Хичээл</a>
+          <a href="/student/assignments">Даалгаврын сан</a>
+          <a href="/teacher/content">Материал оруулах</a>
+        </nav>
+        <div id="view" tabindex="-1"></div>
+      </main>
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -61,5 +68,10 @@
   <script src="/js/store.js"></script>
   <script src="/js/quiz.js?v=units"></script>
   <script src="/js/teacher.js?v=join"></script>
+  <script>
+    document.querySelectorAll(".part-switch a").forEach((a) => {
+      if (a.getAttribute("href") === location.pathname) a.classList.add("active");
+    });
+  </script>
 </body>
 </html>

@@ -194,6 +194,27 @@ h1, h2, h3, h4 {
 
 .content { padding: 28px; flex: 1; }
 
+.part-switch {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.part-switch a {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  background: #fff;
+  color: #004aad;
+  border: 2px solid #004aad;
+  border-radius: 12px;
+  padding: 12px 8px;
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+}
+.part-switch a.active,
+.part-switch a:hover { background: #004aad; color: #fff; }
+
 .view-head { margin-bottom: 20px; }
 .view-head h1 { font-size: 32px; color: #004aad; font-weight: 900; }
 .topbar-title, .card-head { color: #004aad; }
@@ -701,6 +722,10 @@ a.item { text-decoration: none; color: inherit; }
 }
 
 .feature:hover .st-btn { background: #ff2b2b; }
+
+@media (max-width: 640px) {
+  .part-switch { flex-direction: column; }
+}
 
 @media (max-width: 1100px) {
   .home-cards { grid-template-columns: repeat(2, 1fr); }
