@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Сурагч · Математик багшийн туслах</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,560;7..72,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div id="login" class="center-wrap" hidden></div>
+  <div class="shell" id="shell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="20" height="20"><path d="M6 25 L16 7 L26 25" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M10.5 18.5 H21.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+        </span>
+        Математик багшийн туслах
+      </a>
+      <div class="me">
+        <div class="avatar purple" id="me-avatar">СУ</div>
+        <div>
+          <div class="me-name" id="me-name">Сурагч</div>
+          <div class="me-role" id="me-role">· Сурагч</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Сурагчийн цэс">
+        <a href="/student/dashboard" data-view="home"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>Нүүр</a>
+        <a href="/student/lesson" data-view="lesson"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5V4.5A2.5 2.5 0 0 1 6.5 2z"/></svg>Хичээл</a>
+        <a href="/student/assignments" data-view="tasks"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Даалгаварууд<span class="badge" id="task-badge" hidden></span></a>
+        <a href="/student/battle" data-view="battle"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h8l-1 8 10-12h-8l1-8z"/></svg>Battle Mode</a>
+        <a href="/student/assessment" data-view="assessment"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Оношлогоо</a>
+        <a href="/student/stats" data-view="stats"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-3"/></svg>Дүн &amp; Статистик</a>
+      </nav>
+      <div class="side-foot">
+        <button type="button" id="logout"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg> Гарах</button>
+      </div>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <div class="actions">
+          <button class="menu-btn" type="button" id="menu-btn" aria-label="Цэс">☰</button>
+          <div class="topbar-title" id="topbar-title">Нүүр</div>
+        </div>
+        <div class="topbar-right">
+          <span class="chip" id="xp-chip">0 XP</span>
+          <span class="chip date" id="today"></span>
+        </div>
+      </header>
+      <main class="content" id="view" tabindex="-1"></main>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/cloud.js"></script>
+  <script src="/js/curriculum.js"></script>
+  <script src="/js/bank.js"></script>
+  <script src="/js/store.js"></script>
+  <script src="/js/quiz.js"></script>
+  <script src="/js/student.js"></script>
+</body>
+</html>
