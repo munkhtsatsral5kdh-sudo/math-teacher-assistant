@@ -30,7 +30,7 @@
 
   const view = document.getElementById("view");
   let cleanup = null;
-  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null };
+  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, ix1: {}, ix1Show: {} };
 
   function getRank(xp) {
     if (xp >= 8000) return { name: "Mythical Glory", icon: "👑", next: null, nextXP: null, base: 8000 };
@@ -372,6 +372,58 @@
   }
 
   /* ---------------- Tasks ---------------- */
+  function ix1Problem(p) {
+    const picked = ui.ix1[p.n];
+    const shown = ui.ix1Show[p.n];
+    const text = esc(p.text).replaceAll("\n", "<br>");
+    const choices = p.options.length
+      ? `<div class="opts" style="margin-top:10px">${p.options.map((o) => `<button type="button" class="opt ${picked === o.letter ? "picked" : ""}" data-ix="${p.n}" data-letter="${o.letter}"><span class="key">${o.letter}</span><span>${esc(o.text)}</span></button>`).join("")}</div><button type="button" class="btn btn-sm" data-check="${p.n}" style="margin-top:10px">Шалгах</button>`
+      : `<button type="button" class="btn btn-ghost btn-sm" data-show="${p.n}" style="margin-top:10px">Хариу харах</button>`;
+    const mark = shown && p.correct ? (picked === p.correct ? `<span class="pill pill-green">Зөв</span>` : `<span class="pill pill-red">Буруу. Зөв нь ${esc(p.correct)}</span>`) : "";
+    const answer = shown ? `<div class="theory" style="margin-top:8px"><strong>Хариу.</strong> ${esc(p.answer).replaceAll("\n", "<br>")}${p.wrong ? `<div class="hint" style="margin-top:6px">Анхаарах алдаа: ${esc(p.wrong)}</div>` : ""}</div>` : "";
+    return `<div class="material" id="ix-${p.n}"><div class="actions" style="justify-content:space-between"><div class="item-title">${p.n}. ${text}</div>${mark}</div>${choices}${answer}</div>`;
+  }
+
+  function ix1Html() {
+    const bank = window.IX1;
+    if (!bank) return "";
+    return bank.criteria.map((c) => `
+      <div class="card mb">
+        <div class="card-head">${esc(c.name)}</div>
+        <div class="card-body">
+          ${c.outcome ? `<p class="hint" style="margin-top:0">${esc(c.outcome)}</p>` : ""}
+          ${c.levels.map((lv) => `<div class="nav-group" style="margin:14px 0 6px">${esc(lv.name)}</div>${lv.note ? `<p class="hint">${esc(lv.note)}</p>` : ""}${lv.problems.map(ix1Problem).join("")}`).join("")}
+        </div>
+      </div>`).join("");
+  }
+
+  function bindIx1() {
+    const bank = window.IX1;
+    if (!bank) return;
+    const byN = {};
+    bank.criteria.forEach((c) => c.levels.forEach((lv) => lv.problems.forEach((p) => { byN[p.n] = p; })));
+    const keep = () => {
+      const y = window.scrollY;
+      renderTasks();
+      window.scrollTo(0, y);
+    };
+    view.querySelectorAll("[data-letter]").forEach((b) => b.addEventListener("click", () => {
+      ui.ix1[b.dataset.ix] = b.dataset.letter;
+      keep();
+    }));
+    view.querySelectorAll("[data-check]").forEach((b) => b.addEventListener("click", () => {
+      const p = byN[b.dataset.check];
+      if (!ui.ix1[p.n]) { S.toast("Хариултаа сонгоно уу"); return; }
+      ui.ix1Show[p.n] = true;
+      S.toast(ui.ix1[p.n] === p.correct ? "Зөв!" : "Буруу");
+      keep();
+    }));
+    view.querySelectorAll("[data-show]").forEach((b) => b.addEventListener("click", () => {
+      ui.ix1Show[b.dataset.show] = !ui.ix1Show[b.dataset.show];
+      keep();
+    }));
+  }
+
   function renderTasks() {
     const data = S.load();
     const st = me(data);
@@ -384,10 +436,11 @@
       ? `<div class="card mb"><div class="card-head">Багшийн нийтэлсэн материал</div><div class="card-body list">${teacherMats.map((m) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(m.topicKey)}"><div class="item-icon">📘</div><div class="item-main"><div class="item-title">${esc(m.title)}</div><div class="item-sub">${esc(B.unitName(m.topicKey))} · ${esc(B.topicTitle(m.topicKey))}</div></div></a>`).join("")}</div></div>`
       : "";
     if (!st.classId) {
-      view.innerHTML = `
-        <div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Багшийн материал, сэдэв, бодлого нэг хөтөлбөрөөр холбогдоно. Сэдэв дээр дарвал хичээл дээрх тайлбар, бодлого нээгдэнэ.</p></div>
-        ${matsCard}
-        <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
+      const bank = Number(st.grade) === 9 && window.IX1
+        ? `<div class="view-head"><h1>9-р ангийн даалгаврын сан</h1><p>${esc(window.IX1.title)}. ${esc(window.IX1.subtitle)}.</p></div>${matsCard}${ix1Html()}`
+        : `<div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Сэдвээ сонгоход хичээлийн бодлого нээгдэнэ. 9-р ангийн 1-р нэгжийн 90 бодлого ангиа 9 болгоход гарна.</p></div>${matsCard}<div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
+      view.innerHTML = bank;
+      bindIx1();
       return;
     }
     const all = myAssignments(data, st);
@@ -399,11 +452,13 @@
       return `<a class="item" href="/student/assignments?task=${encodeURIComponent(a.id)}"><div class="item-icon">${a.kind === "exam" ? "🧪" : "📝"}</div><div class="item-main"><div class="item-title">${esc(a.title)}</div><div class="item-sub">${a.kind === "exam" ? "Шалгалт" : "Даалгавар"} · ${a.questions.length} асуулт${a.minutes ? ` · ${a.minutes} минут` : ""}${a.topicKey ? ` · ${esc(B.topicTitle(a.topicKey))}` : ""}</div></div>${sub ? `<span class="pill ${S.scoreClass(sub.percent)}">${sub.percent}%</span>` : `<span class="pill ${due.urgent ? "pill-red" : "pill-blue"}">${due.label}</span>`}</a>`;
     };
     view.innerHTML = `
+      ${Number(st.grade) === 9 ? `<div class="view-head"><h1>9-р ангийн даалгаврын сан</h1><p>${esc(window.IX1.title)}. ${esc(window.IX1.subtitle)}.</p></div>${ix1Html()}` : ""}
       ${matsCard}
       <div class="grid grid-2">
         <div class="card"><div class="card-head">Хийх (${pending.length})</div><div class="card-body list">${pending.length ? pending.map(row).join("") : emptyBox("Хийх даалгавар алга", "Багш шинэ даалгавар илгээхэд энд гарна.")}</div></div>
         <div class="card"><div class="card-head">Илгээсэн (${done.length})</div><div class="card-body list">${done.length ? done.map(row).join("") : emptyBox("Илгээсэн даалгавар алга", "Даалгавраа хийж илгээхэд дүн нь энд гарна.")}</div></div>
       </div>`;
+    bindIx1();
   }
 
   function renderTaskRunner(data, st, task) {
