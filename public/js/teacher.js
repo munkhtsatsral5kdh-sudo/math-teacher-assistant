@@ -32,11 +32,35 @@
 
   const view = document.getElementById("view");
 
+  const PAGES = {
+    dashboard: "/teacher/dashboard",
+    classes: "/teacher/classes",
+    content: "/teacher/content",
+    assistant: "/teacher/assistant",
+    grades: "/teacher/grades",
+  };
+
   function currentView() {
-    const hash = location.hash.replace("#", "");
-    if (TITLES[hash]) return hash;
     const last = location.pathname.split("/").filter(Boolean).pop() || "";
     return TITLES[last] ? last : "dashboard";
+  }
+
+  function leaveHash() {
+    const hash = location.hash.replace("#", "");
+    if (!PAGES[hash]) return false;
+    if (location.pathname !== PAGES[hash] || location.hash) {
+      location.replace(PAGES[hash] + location.search);
+      return true;
+    }
+    return false;
+  }
+
+  function applyPageQuery() {
+    const q = new URLSearchParams(location.search);
+    const classId = q.get("class");
+    if (classId) ui.classDetailId = classId;
+    const mode = q.get("mode");
+    if (mode && MODE_META[mode]) ui.mode = mode;
   }
 
   function classById(data, id) {
@@ -79,6 +103,7 @@
     document.getElementById("today").textContent = S.mnDate();
     const v = currentView();
     document.getElementById("topbar-title").textContent = TITLES[v];
+    document.title = `${TITLES[v]} · Математикийн багшийн туслах`;
     document.querySelectorAll(".nav a[data-view]").forEach((a) => a.classList.toggle("active", a.dataset.view === v));
   }
 
@@ -126,9 +151,9 @@
       ? data.classes.map((c) => {
         const studs = studentsOfClass(data, c.id);
         const a = S.avg(studs.flatMap((s) => S.studentScores(data, s.id)));
-        return `<a class="item" href="#classes" data-open-class="${c.id}"><div class="item-icon">🏫</div><div class="item-main"><div class="item-title">${esc(c.name)}</div><div class="item-sub">${c.grade}-р анги · ${studs.length} сурагч</div></div><strong style="color:var(--primary)">${a == null ? "—" : `${a}%`}</strong></a>`;
+        return `<a class="item" href="/teacher/classes?class=${encodeURIComponent(c.id)}"><div class="item-icon">🏫</div><div class="item-main"><div class="item-title">${esc(c.name)}</div><div class="item-sub">${c.grade}-р анги · ${studs.length} сурагч</div></div><strong style="color:var(--primary)">${a == null ? "—" : `${a}%`}</strong></a>`;
       }).join("")
-      : emptyBox("Анги байхгүй", "Эхлээд ангиа үүсгэнэ үү.", `<a class="btn btn-sm" href="#classes">Анги үүсгэх</a>`);
+      : emptyBox("Анги байхгүй", "Эхлээд ангиа үүсгэнэ үү.", `<a class="btn btn-sm" href="/teacher/classes">Анги үүсгэх</a>`);
 
     const students = [...data.students].sort((x, y) => (S.lastActivity(data, y.id) || 0) - (S.lastActivity(data, x.id) || 0)).slice(0, 8);
     const studentsHtml = students.length
@@ -167,16 +192,16 @@
           </div>
           <div class="card-body">${chart}</div>
         </div>
-        <div class="card"><div class="card-head"><span>Ангиуд</span><a href="#classes">Бүгдийг харах →</a></div><div class="card-body list">${classesHtml}</div></div>
+        <div class="card"><div class="card-head"><span>Ангиуд</span><a href="/teacher/classes">Бүгдийг харах →</a></div><div class="card-body list">${classesHtml}</div></div>
       </div>
       <div class="grid grid-2">
-        <div class="card"><div class="card-head"><span>Сурагчдын жагсаалт</span><a href="#grades">Дүн харах →</a></div><div class="card-body" style="padding-top:4px">${studentsHtml}</div></div>
+        <div class="card"><div class="card-head"><span>Сурагчдын жагсаалт</span><a href="/teacher/grades">Дүн харах →</a></div><div class="card-body" style="padding-top:4px">${studentsHtml}</div></div>
         <div class="grid" style="align-content:start">
           <div class="card"><div class="card-head"><span>Хурдан үйлдэл</span></div><div class="card-body"><div class="quick">
-            <a href="#content"><span>📤</span>Материал оруулах</a>
-            <a href="#assistant" data-mode="assignment"><span>📝</span>Даалгавар илгээх</a>
-            <a href="#assistant" data-mode="plan"><span>🗓️</span>Хичээл төлөвлөх</a>
-            <a href="#grades"><span>📋</span>Дүн</a>
+            <a href="/teacher/content"><span>📤</span>Материал оруулах</a>
+            <a href="/teacher/assistant?mode=assignment"><span>📝</span>Даалгавар илгээх</a>
+            <a href="/teacher/assistant?mode=plan"><span>🗓️</span>Хичээл төлөвлөх</a>
+            <a href="/teacher/grades"><span>📋</span>Дүн</a>
           </div></div></div>
           <div class="card"><div class="card-head"><span>Сүүлийн үйл ажиллагаа</span></div><div class="card-body">${actsHtml}</div></div>
         </div>
@@ -186,8 +211,6 @@
       ui.dashClassId = e.target.value;
       renderDashboard();
     });
-    view.querySelectorAll("[data-open-class]").forEach((a) => a.addEventListener("click", () => { ui.classDetailId = a.dataset.openClass; }));
-    view.querySelectorAll("[data-mode]").forEach((a) => a.addEventListener("click", () => { ui.mode = a.dataset.mode; ui.draft = null; ui.planHtml = ""; }));
   }
 
   /* ---------------- Classes ---------------- */
@@ -403,7 +426,7 @@
       result = ui.planHtml || emptyBox("Төлөвлөгөө хараахан гараагүй", "Анги, сэдвээ сонгоод товчийг дарна уу. Зорилтууд нь ЕБС-ийн хөтөлбөрөөс авагдана.");
     } else {
       if (!data.classes.length) {
-        form = emptyBox("Анги алга", "Даалгавар илгээхийн өмнө анги үүсгэнэ үү.", `<a class="btn btn-sm" href="#classes">Анги үүсгэх</a>`);
+        form = emptyBox("Анги алга", "Даалгавар илгээхийн өмнө анги үүсгэнэ үү.", `<a class="btn btn-sm" href="/teacher/classes">Анги үүсгэх</a>`);
       } else {
         const selClass = classById(data, ui.draft?.classId) || data.classes[0];
         const isExam = ui.mode === "exam";
@@ -541,7 +564,7 @@
   function renderGrades() {
     const data = S.load();
     if (!data.classes.length) {
-      view.innerHTML = `<div class="card"><div class="card-body">${emptyBox("Анги алга", "Дүн харахын тулд анги үүсгэж, даалгавар илгээнэ үү.", `<a class="btn btn-sm" href="#classes">Анги үүсгэх</a>`)}</div></div>`;
+      view.innerHTML = `<div class="card"><div class="card-body">${emptyBox("Анги алга", "Дүн харахын тулд анги үүсгэж, даалгавар илгээнэ үү.", `<a class="btn btn-sm" href="/teacher/classes">Анги үүсгэх</a>`)}</div></div>`;
       return;
     }
     if (!classById(data, ui.gradeClassId)) ui.gradeClassId = data.classes[0].id;
@@ -594,7 +617,6 @@
     document.getElementById("shell").classList.remove("nav-open");
   }
 
-  window.addEventListener("hashchange", () => { render(); view.focus({ preventScroll: true }); window.scrollTo(0, 0); });
   document.getElementById("menu-btn").addEventListener("click", () => document.getElementById("shell").classList.toggle("nav-open"));
   document.getElementById("rename-teacher").addEventListener("click", () => {
     const cur = S.load().teacherName;
@@ -607,5 +629,19 @@
   });
   S.onExternalChange(() => { if (currentView() !== "assistant") render(); });
 
-  render();
+  async function boot() {
+    if (leaveHash()) return;
+    applyPageQuery();
+    if (window.Cloud && typeof window.Cloud.pull === "function") {
+      try {
+        const remote = await window.Cloud.pull();
+        if (remote && typeof remote === "object") S.replace(remote);
+      } catch {
+        /* local copy stays */
+      }
+    }
+    render();
+  }
+
+  boot();
 })();

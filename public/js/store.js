@@ -27,6 +27,12 @@
     if (window.Cloud && typeof window.Cloud.push === "function") window.Cloud.push(data);
   }
 
+  function replace(data) {
+    const next = { ...empty(), ...(data && typeof data === "object" ? data : {}) };
+    localStorage.setItem(KEY, JSON.stringify(next));
+    return next;
+  }
+
   function update(fn) {
     const data = load();
     const result = fn(data);
@@ -132,6 +138,7 @@
   window.Store = {
     load,
     save,
+    replace,
     update,
     uid,
     escapeHtml,

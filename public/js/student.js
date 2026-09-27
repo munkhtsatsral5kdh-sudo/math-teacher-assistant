@@ -47,9 +47,28 @@
     return data.students.find((s) => s.id === data.currentStudentId) || null;
   }
 
+  function ensureStudent() {
+    if (me()) return;
+    S.update((d) => {
+      let st = d.students.find((s) => s.grade >= 6 && s.grade <= 9);
+      if (!st) {
+        st = { id: S.uid("s"), name: "Сурагч", grade: 7, classId: null, xp: 0, createdAt: new Date().toISOString() };
+        d.students.push(st);
+      }
+      d.currentStudentId = st.id;
+    });
+  }
+
+  const PAGES = {
+    home: "/student/dashboard",
+    lesson: "/student/lesson",
+    tasks: "/student/assignments",
+    battle: "/student/battle",
+    assessment: "/student/assessment",
+    stats: "/student/stats",
+  };
+
   function currentView() {
-    const hash = location.hash.replace("#", "");
-    if (TITLES[hash]) return hash;
     const last = location.pathname.split("/").filter(Boolean).pop() || "";
     const fromPath = {
       dashboard: "home",
@@ -62,6 +81,24 @@
       stats: "stats",
     };
     return fromPath[last] || "home";
+  }
+
+  function leaveHash() {
+    const hash = location.hash.replace("#", "");
+    if (!PAGES[hash]) return false;
+    if (location.pathname !== PAGES[hash] || location.hash) {
+      location.replace(PAGES[hash] + location.search);
+      return true;
+    }
+    return false;
+  }
+
+  function applyPageQuery() {
+    const q = new URLSearchParams(location.search);
+    const topic = q.get("topic");
+    if (topic) ui.topicKey = topic;
+    const task = q.get("task");
+    if (task) ui.task = { id: task, answers: {}, started: Date.now() };
   }
 
   function emptyBox(title, text, link) {
@@ -107,7 +144,7 @@
     const classOpts = (g) => `<option value="">Бүлэггүй</option>${data.classes.filter((c) => c.grade === g).map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}`;
     box.innerHTML = `
       <div class="login-card">
-        <a class="brand" href="index.html" style="color:var(--ink);border:0;padding:0 0 16px;justify-content:center">
+        <a class="brand" href="/" style="color:var(--ink);border:0;padding:0 0 16px;justify-content:center">
           <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="20" height="20"><path d="M6 25 L16 7 L26 25" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M10.5 18.5 H21.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span>
           Математик багшийн туслах
         </a>
@@ -127,7 +164,7 @@
             return `<button type="button" class="item" data-login="${s.id}"><span class="avatar sm purple">${esc(S.initials(s.name))}</span><span class="item-main"><span class="item-title" style="display:block">${esc(s.name)}</span><span class="item-sub">${s.grade}-р анги${cls ? ` · ${esc(cls.name)}` : ""} · ${s.xp || 0} XP</span></span></button>`;
           }).join("")}</div></div>` : ""}
         </div></div>
-        <p style="text-align:center;margin-top:14px"><a href="index.html">← Нүүр хуудас</a></p>
+        <p style="text-align:center;margin-top:14px"><a href="/">← Нүүр хуудас</a></p>
       </div>`;
     document.getElementById("l-grade").addEventListener("change", (e) => {
       document.getElementById("l-class").innerHTML = classOpts(Number(e.target.value));
@@ -149,13 +186,11 @@
         }
         d.currentStudentId = st.id;
       });
-      location.hash = "#home";
-      start();
+      enterStudent();
     });
     box.querySelectorAll("[data-login]").forEach((b) => b.addEventListener("click", () => {
       S.update((d) => { d.currentStudentId = b.dataset.login; });
-      location.hash = "#home";
-      start();
+      enterStudent();
     }));
   }
 
@@ -165,11 +200,30 @@
     document.getElementById("me-name").textContent = st.name;
     document.getElementById("me-avatar").textContent = S.initials(st.name);
     document.getElementById("me-role").textContent = `${st.grade}-р анги${cls ? ` · ${cls.name}` : ""} · Сурагч`;
+    const gradeSwitch = document.getElementById("grade-switch");
+    if (gradeSwitch) {
+      gradeSwitch.value = String(st.grade);
+      if (!gradeSwitch.dataset.bound) {
+        gradeSwitch.dataset.bound = "1";
+        gradeSwitch.addEventListener("change", () => {
+          const grade = Number(gradeSwitch.value);
+          if (![6, 7, 8, 9].includes(grade)) return;
+          S.update((d) => {
+            const cur = d.students.find((s) => s.id === d.currentStudentId);
+            if (cur) cur.grade = grade;
+          });
+          ui.topicKey = null;
+          ui.practice = null;
+          render();
+        });
+      }
+    }
     document.getElementById("today").textContent = S.mnDate();
     const r = getRank(st.xp || 0);
     document.getElementById("xp-chip").textContent = `${r.icon} ${st.xp || 0} XP`;
     const v = currentView();
     document.getElementById("topbar-title").textContent = TITLES[v];
+    document.title = `${TITLES[v]} · Математикийн багшийн туслах`;
     document.querySelectorAll(".nav a[data-view]").forEach((a) => a.classList.toggle("active", a.dataset.view === v));
     const pending = myAssignments(data, st).filter((a) => !mySubmission(data, st, a.id)).length;
     const badge = document.getElementById("task-badge");
@@ -194,13 +248,13 @@
       : pending.length
         ? `<div class="list">${pending.slice(0, 5).map((a) => {
           const due = S.dueLabel(a.due);
-          return `<a class="item" href="#tasks" data-open-task="${a.id}"><div class="item-icon">${a.kind === "exam" ? "🧪" : "📝"}</div><div class="item-main"><div class="item-title">${esc(a.title)}</div><div class="item-sub">${a.questions.length} асуулт${a.minutes ? ` · ${a.minutes} минут` : ""}</div></div><span class="pill ${due.urgent ? "pill-red" : "pill-blue"}">${due.label}</span></a>`;
+          return `<a class="item" href="/student/assignments?task=${encodeURIComponent(a.id)}"><div class="item-icon">${a.kind === "exam" ? "🧪" : "📝"}</div><div class="item-main"><div class="item-title">${esc(a.title)}</div><div class="item-sub">${a.questions.length} асуулт${a.minutes ? ` · ${a.minutes} минут` : ""}</div></div><span class="pill ${due.urgent ? "pill-red" : "pill-blue"}">${due.label}</span></a>`;
         }).join("")}</div>`
         : emptyBox("Хүлээгдэж буй даалгавар алга", "Шинэ даалгавар ирэхэд энд гарна.");
 
     const mats = myMaterials(data, st).slice(0, 4);
     const matsHtml = mats.length
-      ? `<div class="list">${mats.map((m) => `<a class="item" href="#lesson" data-open-topic="${m.topicKey}"><div class="item-icon">📘</div><div class="item-main"><div class="item-title">${esc(m.title)}</div><div class="item-sub">${esc(B.topicTitle(m.topicKey))} · ${S.shortDate(m.createdAt)}</div></div></a>`).join("")}</div>`
+      ? `<div class="list">${mats.map((m) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(m.topicKey)}"><div class="item-icon">📘</div><div class="item-main"><div class="item-title">${esc(m.title)}</div><div class="item-sub">${esc(B.topicTitle(m.topicKey))} · ${S.shortDate(m.createdAt)}</div></div></a>`).join("")}</div>`
       : emptyBox("Шинэ материал алга", "Багш материал нийтлэхэд энд гарна.");
 
     const practice = data.attempts.filter((a) => a.studentId === st.id && a.kind === "practice" && a.grade === st.grade);
@@ -209,14 +263,14 @@
     const weakest = Object.entries(byTopic).map(([k, v]) => ({ k, a: S.avg(v) })).sort((x, y) => x.a - y.a)[0];
     let suggest;
     if (!diag) {
-      suggest = `<div class="item"><div class="item-icon">🎯</div><div class="item-main"><div class="item-title">Оношлогоо өгөөрэй</div><div class="item-sub">15 асуултаар өөрийн түвшнээ тогтооно.</div></div><a class="btn btn-sm" href="#assessment">Эхлэх</a></div>`;
+      suggest = `<div class="item"><div class="item-icon">🎯</div><div class="item-main"><div class="item-title">Оношлогоо өгөөрэй</div><div class="item-sub">15 асуултаар өөрийн түвшнээ тогтооно.</div></div><a class="btn btn-sm" href="/student/assessment">Эхлэх</a></div>`;
     } else if (weakest && weakest.a < 80) {
-      suggest = `<div class="item"><div class="item-icon">📚</div><div class="item-main"><div class="item-title">${esc(B.topicTitle(weakest.k))}</div><div class="item-sub">Дасгалын дундаж ${weakest.a}% — дахин давтахад тохиромжтой.</div></div><a class="btn btn-sm" href="#lesson" data-open-topic="${weakest.k}">Давтах</a></div>`;
+      suggest = `<div class="item"><div class="item-icon">📚</div><div class="item-main"><div class="item-title">${esc(B.topicTitle(weakest.k))}</div><div class="item-sub">Дасгалын дундаж ${weakest.a}% — дахин давтахад тохиромжтой.</div></div><a class="btn btn-sm" href="/student/lesson?topic=${encodeURIComponent(weakest.k)}">Давтах</a></div>`;
     } else {
       const next = B.topicsOf(st.grade).find((t) => !byTopic[t.key]);
       suggest = next
-        ? `<div class="item"><div class="item-icon">🚀</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(next.title))}</div><div class="item-sub">Хараахан дасгал хийгээгүй сэдэв.</div></div><a class="btn btn-sm" href="#lesson" data-open-topic="${next.key}">Эхлэх</a></div>`
-        : `<div class="item"><div class="item-icon">🏆</div><div class="item-main"><div class="item-title">Бүх сэдвээр дасгал хийсэн байна</div><div class="item-sub">Battle Mode-д өрсөлдөж XP цуглуулаарай.</div></div><a class="btn btn-sm" href="#battle">Battle</a></div>`;
+        ? `<div class="item"><div class="item-icon">🚀</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(next.title))}</div><div class="item-sub">Хараахан дасгал хийгээгүй сэдэв.</div></div><a class="btn btn-sm" href="/student/lesson?topic=${encodeURIComponent(next.key)}">Эхлэх</a></div>`
+        : `<div class="item"><div class="item-icon">🏆</div><div class="item-main"><div class="item-title">Бүх сэдвээр дасгал хийсэн байна</div><div class="item-sub">Battle Mode-д өрсөлдөж XP цуглуулаарай.</div></div><a class="btn btn-sm" href="/student/battle">Battle</a></div>`;
     }
 
     const peers = data.students.filter((s) => (st.classId ? s.classId === st.classId : s.grade === st.grade)).sort((x, y) => (y.xp || 0) - (x.xp || 0)).slice(0, 5);
@@ -232,19 +286,13 @@
         <div class="card metric"><div class="metric-icon bg-purple">⚡</div><div class="metric-value">${wins}</div><div class="metric-label">Battle ялалт</div></div>
       </div>
       <div class="grid grid-2-1 mb">
-        <div class="card"><div class="card-head"><span>Хүлээгдэж буй даалгавар</span><a href="#tasks">Бүгд →</a></div><div class="card-body">${pendingHtml}</div></div>
+        <div class="card"><div class="card-head"><span>Хүлээгдэж буй даалгавар</span><a href="/student/assignments">Бүгд →</a></div><div class="card-body">${pendingHtml}</div></div>
         <div class="card"><div class="card-head"><span>Санал болгох</span></div><div class="card-body">${suggest}${diag ? `<p class="hint" style="margin:10px 0 0">Сүүлийн оношлогоо: ${diag.percent}% · ${diag.placement}-р ангийн түвшин</p>` : ""}</div></div>
       </div>
       <div class="grid grid-2">
-        <div class="card"><div class="card-head"><span>Багшийн шинэ материал</span><a href="#lesson">Хичээл →</a></div><div class="card-body">${matsHtml}</div></div>
+        <div class="card"><div class="card-head"><span>Багшийн шинэ материал</span><a href="/student/lesson">Хичээл →</a></div><div class="card-body">${matsHtml}</div></div>
         <div class="card"><div class="card-head"><span>🏆 ${st.classId ? "Ангийн" : `${st.grade}-р ангийн`} лидерборд</span></div><div class="card-body">${lb}</div></div>
       </div>`;
-    bindOpeners();
-  }
-
-  function bindOpeners() {
-    view.querySelectorAll("[data-open-task]").forEach((a) => a.addEventListener("click", () => { ui.task = { id: a.dataset.openTask, answers: {}, started: Date.now() }; }));
-    view.querySelectorAll("[data-open-topic]").forEach((a) => a.addEventListener("click", () => { ui.topicKey = a.dataset.openTopic; ui.practice = null; }));
   }
 
   /* ---------------- Lesson ---------------- */
@@ -276,7 +324,7 @@
       practiceHtml = `
         <div class="actions" style="justify-content:space-between;margin-bottom:10px"><span class="hint" style="font-weight:800">${answered} / ${practice.questions.length} хариулсан</span>${done ? `<span class="pill ${S.scoreClass(sc.percent)}">${sc.correct}/${sc.total} · ${sc.percent}%</span>` : ""}</div>
         ${practice.questions.map((q, i) => Q.questionCard(q, i, { picked: practice.answers[i] ?? null, reveal: practice.answers[i] != null, total: practice.questions.length })).join("")}
-        ${done ? `<div class="actions" style="margin-top:14px"><button type="button" class="btn" id="again">🔄 Дахин дасгал хийх</button><a class="btn btn-ghost" href="#battle">⚡ Battle-д шалгах</a></div>` : ""}`;
+        ${done ? `<div class="actions" style="margin-top:14px"><button type="button" class="btn" id="again">🔄 Дахин дасгал хийх</button><a class="btn btn-ghost" href="/student/battle">⚡ Battle-д шалгах</a></div>` : ""}`;
     }
 
     view.innerHTML = `
@@ -327,8 +375,10 @@
     if (task) return renderTaskRunner(data, st, task);
 
     if (!st.classId) {
-      view.innerHTML = `<div class="card"><div class="card-body">${emptyBox("Та бүлэгт элсээгүй байна", "Багшийн илгээсэн даалгавар бүлгээр ирдэг. Гараад нэвтрэхдээ бүлгээ сонгоно уу.", `<button type="button" class="btn btn-sm" id="relogin">Бүлэг сонгох</button>`)}</div></div>`;
-      document.getElementById("relogin").addEventListener("click", logout);
+      const topics = B.topicsOf(st.grade);
+      view.innerHTML = `
+        <div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Сэдвээ сонгоход хичээлийн бодит бодлого нээгдэнэ. Багш бүлэгт даалгавар илгээвэл энд жагсаалтаар орно.</p></div>
+        <div class="card"><div class="card-body list">${topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${esc(t.level)}</div></div></a>`).join("")}</div></div>`;
       return;
     }
     const all = myAssignments(data, st);
@@ -337,28 +387,23 @@
     const row = (a) => {
       const sub = mySubmission(data, st, a.id);
       const due = S.dueLabel(a.due);
-      return `<button type="button" class="item" data-task="${a.id}"><div class="item-icon">${a.kind === "exam" ? "🧪" : "📝"}</div><div class="item-main"><div class="item-title">${esc(a.title)}</div><div class="item-sub">${a.kind === "exam" ? "Шалгалт" : "Даалгавар"} · ${a.questions.length} асуулт${a.minutes ? ` · ${a.minutes} минут` : ""}${a.topicKey ? ` · ${esc(B.topicTitle(a.topicKey))}` : ""}</div></div>${sub ? `<span class="pill ${S.scoreClass(sub.percent)}">${sub.percent}%</span>` : `<span class="pill ${due.urgent ? "pill-red" : "pill-blue"}">${due.label}</span>`}</button>`;
+      return `<a class="item" href="/student/assignments?task=${encodeURIComponent(a.id)}"><div class="item-icon">${a.kind === "exam" ? "🧪" : "📝"}</div><div class="item-main"><div class="item-title">${esc(a.title)}</div><div class="item-sub">${a.kind === "exam" ? "Шалгалт" : "Даалгавар"} · ${a.questions.length} асуулт${a.minutes ? ` · ${a.minutes} минут` : ""}${a.topicKey ? ` · ${esc(B.topicTitle(a.topicKey))}` : ""}</div></div>${sub ? `<span class="pill ${S.scoreClass(sub.percent)}">${sub.percent}%</span>` : `<span class="pill ${due.urgent ? "pill-red" : "pill-blue"}">${due.label}</span>`}</a>`;
     };
     view.innerHTML = `
       <div class="grid grid-2">
         <div class="card"><div class="card-head">Хийх (${pending.length})</div><div class="card-body list">${pending.length ? pending.map(row).join("") : emptyBox("Хийх даалгавар алга", "Багш шинэ даалгавар илгээхэд энд гарна.")}</div></div>
         <div class="card"><div class="card-head">Илгээсэн (${done.length})</div><div class="card-body list">${done.length ? done.map(row).join("") : emptyBox("Илгээсэн даалгавар алга", "Даалгавраа хийж илгээхэд дүн нь энд гарна.")}</div></div>
       </div>`;
-    view.querySelectorAll("[data-task]").forEach((b) => b.addEventListener("click", () => {
-      ui.task = { id: b.dataset.task, answers: {}, started: Date.now() };
-      renderTasks();
-    }));
   }
 
   function renderTaskRunner(data, st, task) {
     const sub = mySubmission(data, st, task.id);
-    const back = `<button type="button" class="btn btn-ghost btn-sm" id="back">← Жагсаалт</button>`;
+    const back = `<a class="btn btn-ghost btn-sm" id="back" href="/student/assignments">← Жагсаалт</a>`;
     if (sub) {
       view.innerHTML = `
         <div class="actions mb">${back}</div>
         <div class="card mb"><div class="result-hero"><div class="result-emoji">${sub.percent >= 80 ? "🏆" : sub.percent >= 50 ? "📈" : "💪"}</div><div class="result-score">${sub.percent}%</div><p><b>${esc(task.title)}</b> · ${sub.correct}/${sub.total} зөв · ${S.shortDate(sub.at)}${sub.timedOut ? " · Хугацаа дууссан" : ""}</p></div></div>
         <div class="card"><div class="card-head">Хариултын тойм</div><div class="card-body">${task.questions.map((q, i) => Q.questionCard(q, i, { picked: sub.answers[i] ?? null, reveal: true, total: task.questions.length })).join("")}</div></div>`;
-      document.getElementById("back").addEventListener("click", () => { ui.task = null; renderTasks(); });
       return;
     }
     const t = ui.task;
@@ -372,10 +417,8 @@
       </div>
       <div id="qs">${task.questions.map((q, i) => Q.questionCard(q, i, { picked: t.answers[i] ?? null, total: task.questions.length })).join("")}</div>`;
 
-    document.getElementById("back").addEventListener("click", () => {
-      if (answered && !confirm("Хариултууд хадгалагдахгүй. Гарах уу?")) return;
-      ui.task = null;
-      renderTasks();
+    document.getElementById("back").addEventListener("click", (e) => {
+      if (answered && !confirm("Хариултууд хадгалагдахгүй. Гарах уу?")) e.preventDefault();
     });
     view.querySelectorAll(".opt").forEach((b) => b.addEventListener("click", () => {
       t.answers[Number(b.dataset.q)] = Number(b.dataset.opt);
@@ -745,7 +788,7 @@
           const p = s.t ? Math.round((s.c / s.t) * 100) : 0;
           return `<div style="margin-bottom:12px"><div class="actions" style="justify-content:space-between;font-size:13px;font-weight:700"><span>${l.label}</span><span>${s.c}/${s.t} · ${p}%</span></div><div class="meter"><span style="width:${p}%;background:${p >= 75 ? "var(--green)" : p >= 55 ? "var(--amber)" : "var(--red)"}"></span></div></div>`;
         }).join("")}</div></div>
-        <div class="card"><div class="card-head">Зөвлөмж</div><div class="card-body"><p class="pre" style="margin:0">${esc(lines.join("\n\n"))}</p><div class="actions" style="margin-top:14px"><a class="btn btn-sm" href="#lesson">📚 Хичээл рүү</a><button type="button" class="btn btn-ghost btn-sm" id="again">🔄 Дахин өгөх</button></div></div></div>
+        <div class="card"><div class="card-head">Зөвлөмж</div><div class="card-body"><p class="pre" style="margin:0">${esc(lines.join("\n\n"))}</p><div class="actions" style="margin-top:14px"><a class="btn btn-sm" href="/student/lesson">📚 Хичээл рүү</a><button type="button" class="btn btn-ghost btn-sm" id="again">🔄 Дахин өгөх</button></div></div></div>
       </div>
       <div class="card"><div class="card-head">Хариултын тойм</div><div class="card-body">${a.items.map((q, i) => Q.questionCard(q, i, { picked: a.answers[i] ?? null, reveal: true, total: a.items.length })).join("")}</div></div>`;
     renderChrome(S.load(), me());
@@ -796,9 +839,9 @@
 
   function render() {
     if (cleanup) { cleanup(); cleanup = null; }
+    ensureStudent();
     const data = S.load();
     const st = me(data);
-    if (!st) { renderLogin(); return; }
     document.getElementById("login").hidden = true;
     document.getElementById("shell").hidden = false;
     renderChrome(data, st);
@@ -812,21 +855,28 @@
 
   function logout() {
     if (busy() && !confirm("Явцтай ажил хадгалагдахгүй. Гарах уу?")) return;
-    S.update((d) => { d.currentStudentId = null; });
-    Object.assign(ui, { topicKey: null, practice: null, task: null, battle: null, assess: null });
+    location.assign("/");
+  }
+
+  function enterStudent() {
+    if (location.pathname === "/student/dashboard" && !location.search && !location.hash) start();
+    else location.assign("/student/dashboard");
+  }
+
+  async function start() {
+    if (leaveHash()) return;
+    applyPageQuery();
+    if (window.Cloud && typeof window.Cloud.pull === "function") {
+      try {
+        const remote = await window.Cloud.pull();
+        if (remote && typeof remote === "object") S.replace(remote);
+      } catch {
+        /* local copy stays */
+      }
+    }
     render();
   }
 
-  function start() {
-    render();
-  }
-
-  window.addEventListener("hashchange", () => {
-    if (ui.battle && ui.battle.phase === "round" && currentView() !== "battle") ui.battle = null;
-    render();
-    view.focus({ preventScroll: true });
-    window.scrollTo(0, 0);
-  });
   document.getElementById("menu-btn").addEventListener("click", () => document.getElementById("shell").classList.toggle("nav-open"));
   document.getElementById("logout").addEventListener("click", logout);
   S.onExternalChange(() => {
