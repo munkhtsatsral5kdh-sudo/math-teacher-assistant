@@ -686,8 +686,54 @@
     };
   }
 
+  const CONTENT_UNITS = {
+    6: [
+      { name: "Тоо тоолол", keys: ["6-0", "6-1", "6-2", "6-3"] },
+      { name: "Алгебр", keys: ["6-4", "6-5"] },
+      { name: "Геометр", keys: ["6-6", "6-7"] },
+      { name: "Хэмжигдэхүүн", keys: ["6-8"] },
+      { name: "Магадлал, статистик", keys: ["6-9", "6-10"] },
+    ],
+    7: [
+      { name: "Тоо тоолол", keys: ["7-0", "7-1", "7-2", "7-3"] },
+      { name: "Алгебр", keys: ["7-4", "7-5"] },
+      { name: "Геометр", keys: ["7-6", "7-7"] },
+      { name: "Хэмжигдэхүүн", keys: ["7-8"] },
+      { name: "Магадлал, статистик", keys: ["7-9", "7-10"] },
+    ],
+    8: [
+      { name: "Тоо тоолол", keys: ["8-0", "8-1", "8-2"] },
+      { name: "Алгебр", keys: ["8-3", "8-4"] },
+      { name: "Геометр", keys: ["8-5", "8-6"] },
+      { name: "Хэмжигдэхүүн", keys: ["8-7"] },
+      { name: "Магадлал, статистик", keys: ["8-8", "8-9"] },
+    ],
+    9: [
+      { name: "Тоо тоолол", keys: ["9-0", "9-1", "9-2"] },
+      { name: "Алгебр", keys: ["9-3", "9-4"] },
+      { name: "Геометр", keys: ["9-5", "9-6"] },
+      { name: "Хэмжигдэхүүн", keys: ["9-7"] },
+      { name: "Магадлал, статистик", keys: ["9-8", "9-9"] },
+    ],
+  };
+
   function topicsOf(grade) {
     return (window.CURRICULUM[String(grade)] || []);
+  }
+
+  function contentUnits(grade) {
+    const topics = topicsOf(grade);
+    const byKey = Object.fromEntries(topics.map((t) => [t.key, t]));
+    return (CONTENT_UNITS[Number(grade)] || []).map((unit) => ({
+      name: unit.name,
+      topics: unit.keys.map((key) => byKey[key]).filter(Boolean),
+    })).filter((unit) => unit.topics.length);
+  }
+
+  function unitName(topicKey) {
+    const grade = Number(String(topicKey).split("-")[0]);
+    const unit = (CONTENT_UNITS[grade] || []).find((u) => u.keys.includes(topicKey));
+    return unit ? unit.name : "";
   }
 
   function generate(topicKey, level) {
@@ -744,6 +790,8 @@
     GRADES: [6, 7, 8, 9],
     LEVEL_NAMES,
     topicsOf,
+    contentUnits,
+    unitName,
     buildQuestions,
     unitsFor,
     bankCount,

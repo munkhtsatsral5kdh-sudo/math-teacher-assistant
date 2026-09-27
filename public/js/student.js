@@ -304,10 +304,15 @@
     const topic = topics.find((t) => t.key === ui.topicKey);
     const practiceOf = (k) => S.avg(data.attempts.filter((a) => a.studentId === st.id && a.kind === "practice" && a.topicKey === k).map((a) => a.percent));
 
-    const list = topics.map((t, i) => {
-      const p = practiceOf(t.key);
-      const mats = myMaterials(data, st, t.key).length;
-      return `<button type="button" class="item ${t.key === ui.topicKey ? "active" : ""}" data-topic="${t.key}"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${mats ? `📘 ${mats} материал · ` : ""}${p == null ? "Дасгал хийгээгүй" : `Дасгал ${p}%`}</div></div></button>`;
+    let n = 0;
+    const list = B.contentUnits(st.grade).map((unit) => {
+      const items = unit.topics.map((t) => {
+        n += 1;
+        const p = practiceOf(t.key);
+        const mats = myMaterials(data, st, t.key).length;
+        return `<button type="button" class="item ${t.key === ui.topicKey ? "active" : ""}" data-topic="${t.key}"><div class="item-icon">${n}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${mats ? `📘 ${mats} материал · ` : ""}${p == null ? "Дасгал хийгээгүй" : `Дасгал ${p}%`}</div></div></button>`;
+      }).join("");
+      return `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${items}`;
     }).join("");
 
     const units = B.unitsFor(topic.key).filter((u) => u.theory);
@@ -329,9 +334,9 @@
 
     view.innerHTML = `
       <div class="grid grid-1-2">
-        <div class="card" style="align-self:start"><div class="card-head">${st.grade}-р ангийн сэдвүүд</div><div class="card-body list topic-list">${list}</div></div>
+        <div class="card" style="align-self:start"><div class="card-head">${st.grade}-р анги · ${esc(B.unitName(topic.key) || "Нэгж")}</div><div class="card-body list topic-list">${list}</div></div>
         <div class="grid" style="align-content:start">
-          <div class="card"><div class="card-head"><span>${esc(B.niceTitle(topic.title))}</span><span class="pill pill-purple">${esc(topic.level)}</span></div><div class="card-body">
+          <div class="card"><div class="card-head"><span>${esc(B.unitName(topic.key))} · ${esc(B.niceTitle(topic.title))}</span><span class="pill pill-purple">${esc(topic.level)}</span></div><div class="card-body">
             <h3 style="font-size:14px;margin-bottom:6px">Суралцахуйн зорилт</h3>
             <ul class="objectives">${topic.objectives.map((o) => `<li>${esc(o)}</li>`).join("")}</ul>
             ${units.length ? `<h3 style="font-size:14px;margin:16px 0 8px">Товч онол</h3>${units.map((u) => `<div class="theory"><strong>${esc(u.name)}</strong>${esc(u.theory)}</div>`).join("")}` : ""}
@@ -378,7 +383,7 @@
       const topics = B.topicsOf(st.grade);
       view.innerHTML = `
         <div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Сэдвээ сонгоход хичээлийн бодит бодлого нээгдэнэ. Багш бүлэгт даалгавар илгээвэл энд жагсаалтаар орно.</p></div>
-        <div class="card"><div class="card-body list">${topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${esc(t.level)}</div></div></a>`).join("")}</div></div>`;
+        <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
       return;
     }
     const all = myAssignments(data, st);

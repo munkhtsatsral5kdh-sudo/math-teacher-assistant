@@ -39,7 +39,11 @@
 
   function topicOptions(grade, selected, withAll = false) {
     const all = withAll ? `<option value="">Бүх сэдэв (холимог)</option>` : "";
-    return all + window.MathBank.topicsOf(grade).map((t) => `<option value="${t.key}" ${selected === t.key ? "selected" : ""}>${escapeHtml(window.MathBank.niceTitle(t.title))}</option>`).join("");
+    const groups = window.MathBank.contentUnits(grade).map((unit) => {
+      const opts = unit.topics.map((t) => `<option value="${t.key}" ${selected === t.key ? "selected" : ""}>${escapeHtml(window.MathBank.niceTitle(t.title))}</option>`).join("");
+      return `<optgroup label="${escapeHtml(unit.name)}">${opts}</optgroup>`;
+    }).join("");
+    return all + groups;
   }
 
   function score(questions, answers) {
