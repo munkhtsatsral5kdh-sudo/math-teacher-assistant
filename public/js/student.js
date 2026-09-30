@@ -30,7 +30,7 @@
 
   const view = document.getElementById("view");
   let cleanup = null;
-  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, geval: null, ix1: {}, ix1Show: {}, lessonPart: "theory", example: null, mp: {}, mpShow: {}, mpLevel: "Мэдлэг, ойлголт", st: {}, stShow: {} };
+  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, geval: null, nunit: null, ix1: {}, ix1Show: {}, lessonPart: "theory", example: null, mp: {}, mpShow: {}, mpLevel: "Мэдлэг, ойлголт", st: {}, stShow: {} };
 
   function getRank(xp) {
     if (xp >= 8000) return { name: "Mythical Glory", icon: "👑", next: null, nextXP: null, base: 8000 };
@@ -101,6 +101,9 @@
     if (task) ui.task = { id: task, answers: {}, started: Date.now() };
     const tab = q.get("tab");
     if (tab === "theory" || tab === "example" || tab === "task") ui.lessonPart = tab;
+    const nu = Number(q.get("nu"));
+    const nv = Number(q.get("nv"));
+    if (nu && nv) ui.nunit = { unit: nu, variant: nv, answers: {}, show: false, saved: false };
   }
 
   function emptyBox(title, text, link) {
@@ -358,7 +361,9 @@
       const mp = mpUnit(topic.key);
       const blocks = [];
       if (stu) {
-        blocks.push(`<p class="hint">${esc(stu.name)} · ${stu.count} даалгавар. Бодоод <b>Бодолт</b> дээр дарж зөв хариутай тулга.</p>${stHtml(stu)}`);
+        const nu = window.NU && window.NU.units.find((u) => u.n === stu.n);
+        const links = nu ? `<div class="actions" style="flex-wrap:wrap;margin:8px 0">${nu.variants.map((v) => `<a class="btn btn-sm" href="/student/assessment?nu=${nu.n}&nv=${v.v}">Нэгжийн үнэлгээ ${v.v}</a>`).join("")}</div>` : "";
+        blocks.push(`<p class="hint">${esc(stu.name)} · ${stu.count} даалгавар. Бодоод <b>Бодолт</b> дээр дарж зөв хариутай тулга.</p>${links}${stHtml(stu)}`);
       }
       if (mp) {
         const lv = mp.levels.find((l) => l.name === ui.mpLevel) || mp.levels[0];
@@ -946,15 +951,77 @@
     }
   }
 
+  function nunitHome() {
+    if (!window.NU) return "";
+    return `<div class="card mb"><div class="card-head">${esc(window.NU.title)} · 9-р анги · 40 минут</div><div class="card-body">
+      <p class="hint" style="margin-top:0">Нэгж бүр 4 хувилбар, 18 даалгавар, 20 оноо. 1–16 сонгох, 17–18 задгай.</p>
+      ${window.NU.units.map((u) => `<div style="margin-bottom:10px"><div class="item-title">Нэгж ${u.n}. ${esc(u.name)}</div><div class="actions" style="flex-wrap:wrap;margin-top:6px">${u.variants.map((v) => `<button type="button" class="btn btn-sm" data-nu="${u.n}" data-nv="${v.v}">Хувилбар ${v.v}</button>`).join("")}</div></div>`).join("")}
+    </div></div>`;
+  }
+
+  function renderNunit(st) {
+    const g = ui.nunit;
+    const unit = window.NU.units.find((u) => u.n === g.unit);
+    const variant = unit && unit.variants.find((v) => v.v === g.variant);
+    if (!variant) { ui.nunit = null; return renderAssessment(); }
+    const choice = variant.questions.filter((q) => q.options.length);
+    const correct = choice.filter((q) => g.answers[q.n] === q.answer).length;
+    const body = variant.questions.map((q) => {
+      const imgs = (q.images || []).map((src) => `<img src="${esc(src)}" alt="" style="max-width:100%;margin-top:8px">`).join("");
+      if (!q.options.length) {
+        const answer = g.show ? `<div class="theory" style="margin-top:8px"><strong>Бодолт.</strong> ${esc(q.answerText)}</div>` : "";
+        return `<div class="q" style="margin-bottom:16px"><div class="q-text"><b>${q.n}.</b> ${esc(q.text).replaceAll("\n", "<br>")}</div>${imgs}${answer}</div>`;
+      }
+      const picked = g.answers[q.n];
+      const opts = q.options.map((o, j) => {
+        let cls = "opt";
+        if (g.show) cls += j === q.answer ? " correct" : (j === picked ? " wrong" : "");
+        else if (j === picked) cls += " picked";
+        return `<button type="button" class="${cls}" data-nui="${q.n}" data-nuo="${j}" ${g.show ? "disabled" : ""}><span class="key">${"ABCD"[j]}</span><span>${esc(o)}</span></button>`;
+      }).join("");
+      return `<div class="q" style="margin-bottom:16px"><div class="q-text"><b>${q.n}.</b> ${esc(q.text)}</div>${imgs}<div class="opts">${opts}</div></div>`;
+    }).join("");
+    view.innerHTML = `
+      <div class="actions mb"><button type="button" class="btn btn-ghost btn-sm" id="nu-back">← Нэгжийн үнэлгээ</button>${g.show ? `<span class="pill ${S.scoreClass(Math.round(correct / choice.length * 100))}">Сонгох ${correct}/${choice.length}</span>` : ""}</div>
+      <div class="card"><div class="card-head">Нэгж ${unit.n}. ${esc(unit.name)} · Хувилбар ${variant.v}</div><div class="card-body">
+        <p class="hint">40 минут · 18 даалгавар · 20 оноо. Задгай 2 даалгаврын бодолт шалгасны дараа гарна.</p>
+        ${body}
+        ${g.show ? "" : `<button type="button" class="btn btn-grad" id="nu-check">Шалгах</button>`}
+      </div></div>`;
+    document.getElementById("nu-back").addEventListener("click", () => { ui.nunit = null; renderAssessment(); });
+    const check = document.getElementById("nu-check");
+    if (check) check.addEventListener("click", () => {
+      g.show = true;
+      if (!g.saved) {
+        g.saved = true;
+        saveAttempt({ kind: "nunit", unit: unit.n, variant: variant.v, topicKey: null, correct, total: choice.length, percent: Math.round(correct / choice.length * 100) });
+        addXp(20);
+      }
+      const y = window.scrollY;
+      renderAssessment();
+      window.scrollTo(0, y);
+    });
+    if (!g.show) {
+      view.querySelectorAll("[data-nuo]").forEach((b) => b.addEventListener("click", () => {
+        g.answers[Number(b.dataset.nui)] = Number(b.dataset.nuo);
+        const y = window.scrollY;
+        renderAssessment();
+        window.scrollTo(0, y);
+      }));
+    }
+  }
+
   function renderAssessment() {
     const data = S.load();
     const st = me(data);
     if (ui.geval) return renderGeval(st);
+    if (ui.nunit) return renderNunit(st);
     const a = ui.assess;
     if (!a) {
       const last = data.attempts.filter((x) => x.studentId === st.id && x.kind === "assessment").sort((x, y) => new Date(y.at) - new Date(x.at))[0];
       view.innerHTML = `
         ${gevalHome()}
+        ${nunitHome()}
         <div class="grid grid-2-1">
           <div class="card"><div class="card-head">🎯 Оношлогоо</div><div class="card-body">
             <p style="margin-top:0">Математикийн түвшнээ тогтоох шалгалт. ${st.grade}-р анги болон түүнээс доош ангиудын сэдвээс асуулт гарна (6-р ангиас доош бууруулахгүй).</p>
@@ -974,6 +1041,10 @@
       });
       view.querySelectorAll("[data-ge]").forEach((b) => b.addEventListener("click", () => {
         ui.geval = { variant: Number(b.dataset.ge), answers: {}, show: false, saved: false };
+        renderAssessment();
+      }));
+      view.querySelectorAll("[data-nv]").forEach((b) => b.addEventListener("click", () => {
+        ui.nunit = { unit: Number(b.dataset.nu), variant: Number(b.dataset.nv), answers: {}, show: false, saved: false };
         renderAssessment();
       }));
       return;
@@ -1100,8 +1171,8 @@
       }),
       ...mine.map((a) => ({
         at: a.at,
-        type: { practice: "Дасгал", battle: "Battle", assessment: "Оношлогоо", geval: "Жишиг тест" }[a.kind] || a.kind,
-        title: a.kind === "geval" ? `Хувилбар ${a.variant}` : a.kind === "assessment" ? `${a.placement}-р ангийн түвшин` : a.topicKey ? B.topicTitle(a.topicKey) : "Холимог сэдэв",
+        type: { practice: "Дасгал", battle: "Battle", assessment: "Оношлогоо", geval: "Жишиг тест", nunit: "Нэгжийн үнэлгээ" }[a.kind] || a.kind,
+        title: a.kind === "nunit" ? `Нэгж ${a.unit} · Хувилбар ${a.variant}` : a.kind === "geval" ? `Хувилбар ${a.variant}` : a.kind === "assessment" ? `${a.placement}-р ангийн түвшин` : a.topicKey ? B.topicTitle(a.topicKey) : "Холимог сэдэв",
         score: a.kind === "battle" ? `${a.win ? "Ялалт" : "Ялагдал"} · ${a.correct}/${a.total}` : `${a.percent}%`,
         cls: a.kind === "battle" ? (a.win ? "pill-green" : "pill-muted") : S.scoreClass(a.percent),
       })),
