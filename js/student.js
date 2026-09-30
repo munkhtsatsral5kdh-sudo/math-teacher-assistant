@@ -30,7 +30,7 @@
 
   const view = document.getElementById("view");
   let cleanup = null;
-  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, ix1: {}, ix1Show: {}, lessonPart: "theory", example: null };
+  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, ix1: {}, ix1Show: {}, lessonPart: "theory", example: null, mp: {}, mpShow: {}, mpLevel: "Мэдлэг, ойлголт" };
 
   function getRank(xp) {
     if (xp >= 8000) return { name: "Mythical Glory", icon: "👑", next: null, nextXP: null, base: 8000 };
@@ -312,7 +312,8 @@
         n += 1;
         const p = practiceOf(t.key);
         const mats = myMaterials(data, st, t.key).length;
-        return `<button type="button" class="item ${t.key === ui.topicKey ? "active" : ""}" data-topic="${t.key}"><div class="item-icon">${n}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${mats ? `📘 ${mats} материал · ` : ""}${p == null ? "Дасгал хийгээгүй" : `Дасгал ${p}%`}</div></div></button>`;
+        const mpN = mpCount(t.key);
+        return `<button type="button" class="item ${t.key === ui.topicKey ? "active" : ""}" data-topic="${t.key}"><div class="item-icon">${n}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${mpN ? `${mpN} бодлого · ` : ""}${mats ? `📘 ${mats} материал · ` : ""}${p == null ? "Дасгал хийгээгүй" : `Дасгал ${p}%`}</div></div></button>`;
       }).join("");
       return `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${items}`;
     }).join("");
@@ -348,9 +349,18 @@
         panel = `<p class="hint">Жишээг бодолттой нь уншаад, дараа нь Даалгавар товчоор өөрөө бод.</p>${Q.questionCard(ui.example.q, 0, { reveal: true, picked: ui.example.q.answer, total: 1 })}`;
       }
     } else if (part === "task") {
-      panel = unit1 && window.IX1
-        ? `<p class="hint">Бодлогоо өөрөө бод. Дуусаад <b>Бодолт</b> дээр дарж зөв хариутай тулга.</p>${ix1Html("task")}`
-        : practiceHtml;
+      const mp = mpUnit(topic.key);
+      if (mp) {
+        const lv = mp.levels.find((l) => l.name === ui.mpLevel) || mp.levels[0];
+        panel = `<p class="hint">${esc(mp.name)}. Танин мэдэхүйн түвшингээ сонгоод бод. Сонгосны дараа <b>Шалгах</b> дээр дар.</p>
+          <div class="seg">${mp.levels.map((l) => `<button type="button" class="${l.name === lv.name ? "active" : ""}" data-mplevel="${esc(l.name)}">${esc(l.name)} · ${l.problems.length}</button>`).join("")}</div>
+          ${lv.problems.map(mpProblem).join("")}
+          ${unit1 && window.IX1 ? `<h3 style="margin:18px 0 8px">Шалгуурт даалгавар</h3>${ix1Html("task")}` : ""}`;
+      } else {
+        panel = unit1 && window.IX1
+          ? `<p class="hint">Бодлогоо өөрөө бод. Дуусаад <b>Бодолт</b> дээр дарж зөв хариутай тулга.</p>${ix1Html("task")}`
+          : practiceHtml;
+      }
     } else {
       panel = `
         <h3 style="font-size:14px;margin-bottom:6px">Суралцахуйн зорилт</h3>
@@ -374,6 +384,7 @@
 
     view.querySelectorAll("[data-part]").forEach((b) => b.addEventListener("click", () => { ui.lessonPart = b.dataset.part; renderLesson(); }));
     view.querySelectorAll("[data-topic]").forEach((b) => b.addEventListener("click", () => { ui.topicKey = b.dataset.topic; ui.practice = null; ui.lessonPart = "theory"; renderLesson(); }));
+    if (part === "task" && mpUnit(topic.key)) bindMp();
     if (part === "task" && unit1) bindIx1();
     const startBtn = document.getElementById("start-practice");
     const begin = () => { ui.practice = { topicKey: topic.key, questions: B.buildQuestions({ grade: st.grade, topicKey: topic.key, count: 5 }), answers: {}, saved: false }; renderLesson(); };
@@ -396,6 +407,40 @@
       renderChrome(S.load(), me());
       renderLesson();
       window.scrollTo(0, y);
+    }));
+  }
+
+  function mpUnit(topicKey) {
+    if (!window.MP) return null;
+    return window.MP.units.find((u) => u.topics.includes(topicKey)) || null;
+  }
+
+  function mpCount(topicKey) {
+    const u = mpUnit(topicKey);
+    return u ? u.levels.reduce((n, lv) => n + lv.problems.length, 0) : 0;
+  }
+
+  function mpProblem(p) {
+    const picked = ui.mp[p.id];
+    const shown = ui.mpShow[p.id];
+    const mark = shown ? (picked === p.correct ? `<span class="pill pill-green">Зөв</span>` : `<span class="pill pill-red">Буруу. Зөв нь ${esc(p.correct)}</span>`) : "";
+    return `<div class="material" id="mp-${p.id}"><div class="actions" style="justify-content:space-between"><div class="item-title">${esc(p.text)}</div>${mark}</div>
+      <div class="opts" style="margin-top:10px">${p.options.map((o) => `<button type="button" class="opt ${picked === o.letter ? "picked" : ""}" data-mp="${p.id}" data-mpletter="${o.letter}"><span class="key">${o.letter}</span><span>${esc(o.text)}</span></button>`).join("")}</div>
+      <button type="button" class="btn btn-sm" data-mpcheck="${p.id}" style="margin-top:10px">Шалгах</button></div>`;
+  }
+
+  function bindMp() {
+    const keep = () => {
+      const y = window.scrollY;
+      renderLesson();
+      window.scrollTo(0, y);
+    };
+    view.querySelectorAll("[data-mplevel]").forEach((b) => b.addEventListener("click", () => { ui.mpLevel = b.dataset.mplevel; keep(); }));
+    view.querySelectorAll("[data-mpletter]").forEach((b) => b.addEventListener("click", () => { ui.mp[b.dataset.mp] = b.dataset.mpletter; keep(); }));
+    view.querySelectorAll("[data-mpcheck]").forEach((b) => b.addEventListener("click", () => {
+      if (!ui.mp[b.dataset.mpcheck]) { S.toast("Хариултаа сонгоно уу"); return; }
+      ui.mpShow[b.dataset.mpcheck] = true;
+      keep();
     }));
   }
 
@@ -470,7 +515,7 @@
       view.innerHTML = `
         <div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Сэдэв дээр дарвал тухайн хичээлийн даалгавар нээгдэнэ. Тэнд Онол, Жишээ, Даалгавар гэж шилжинэ.</p></div>
         ${matsCard}
-        <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}&tab=task"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${t.key === "9-0" ? "90 бодлого · " : ""}${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
+        <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}&tab=task"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${mpCount(t.key) ? `${mpCount(t.key)} бодлого · ` : ""}${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
       return;
     }
     const all = myAssignments(data, st);
