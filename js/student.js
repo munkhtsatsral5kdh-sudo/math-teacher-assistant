@@ -30,7 +30,7 @@
 
   const view = document.getElementById("view");
   let cleanup = null;
-  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, ix1: {}, ix1Show: {}, lessonPart: "theory", example: null, mp: {}, mpShow: {}, mpLevel: "Мэдлэг, ойлголт", st: {}, stShow: {} };
+  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, geval: null, ix1: {}, ix1Show: {}, lessonPart: "theory", example: null, mp: {}, mpShow: {}, mpLevel: "Мэдлэг, ойлголт", st: {}, stShow: {} };
 
   function getRank(xp) {
     if (xp >= 8000) return { name: "Mythical Glory", icon: "👑", next: null, nextXP: null, base: 8000 };
@@ -873,13 +873,88 @@
     return { emoji: "💪", title: "Хамтдаа сайжруулъя!", message: "Эхлээд хялбар сэдвээс эхэлнэ. Өдөр бүр 20 минут дасгал хийвэл аажмаар сайжирна." };
   }
 
+  function gevalHome() {
+    if (!window.GE) return "";
+    return `<div class="card mb"><div class="card-head">${esc(window.GE.title)} · Математик · 9-р анги</div><div class="card-body">
+      <p class="hint" style="margin-top:0">20 жишиг тест. Нэгийг нь сонгоод 18 асуултад хариул. Дуусаад <b>Шалгах</b> дээр дар.</p>
+      <div class="actions" style="flex-wrap:wrap">${window.GE.variants.map((v) => `<button type="button" class="btn btn-sm" data-ge="${v.n}">Хувилбар ${v.n}</button>`).join("")}</div>
+    </div></div>`;
+  }
+
+  function gevalTable(rows) {
+    return `<table style="border-collapse:collapse;margin:8px 0">${rows.map((r) => `<tr>${r.map((c) => `<td style="border:1px solid #ddd;padding:4px 8px">${esc(c)}</td>`).join("")}</tr>`).join("")}</table>`;
+  }
+
+  function gevalStimulus(s) {
+    if (!s) return "";
+    const imgs = (s.images || []).map((src) => `<img src="${esc(src)}" alt="" style="max-width:100%;margin-top:8px">`).join("");
+    const tables = (s.tables || []).map(gevalTable).join("");
+    return `<div class="theory" style="margin-bottom:12px">${esc(s.text).replaceAll("\n", "<br>")}${imgs}${tables}</div>`;
+  }
+
+  function stimKey(s) {
+    return s ? `${s.text}|${(s.images || []).join(",")}|${(s.tables || []).length}` : "";
+  }
+
+  function renderGeval(st) {
+    const g = ui.geval;
+    const variant = window.GE.variants.find((v) => v.n === g.variant);
+    if (!variant) { ui.geval = null; return renderAssessment(); }
+    const correct = variant.questions.filter((q, i) => g.answers[i] === q.answer).length;
+    let prevStim = "";
+    const body = variant.questions.map((q, i) => {
+      const key = stimKey(q.stimulus);
+      const stim = key && key !== prevStim ? gevalStimulus(q.stimulus) : "";
+      prevStim = key || prevStim;
+      const picked = g.answers[i];
+      const opts = q.options.map((o, j) => {
+        let cls = "opt";
+        if (g.show) cls += j === q.answer ? " correct" : (j === picked ? " wrong" : "");
+        else if (j === picked) cls += " picked";
+        return `<button type="button" class="${cls}" data-gei="${i}" data-geo="${j}" ${g.show ? "disabled" : ""}><span class="key">${"ABCD"[j]}</span><span>${esc(o)}</span></button>`;
+      }).join("");
+      const imgs = (q.images || []).map((src) => `<img src="${esc(src)}" alt="" style="max-width:100%;margin-top:8px">`).join("");
+      return `${stim}<div class="q" style="margin-bottom:16px"><div class="q-text"><b>${q.n}.</b> ${esc(q.text).replaceAll("\n", "<br>")}</div>${imgs}<div class="opts">${opts}</div></div>`;
+    }).join("");
+    view.innerHTML = `
+      <div class="actions mb"><button type="button" class="btn btn-ghost btn-sm" id="ge-back">← Жишиг тестүүд</button>${g.show ? `<span class="pill ${S.scoreClass(Math.round(correct / 18 * 100))}">${correct}/18 зөв</span>` : ""}</div>
+      <div class="card"><div class="card-head">Хувилбар ${variant.n} · 18 асуулт</div><div class="card-body">
+        ${body}
+        ${g.show ? "" : `<button type="button" class="btn btn-grad" id="ge-check">Шалгах</button>`}
+      </div></div>`;
+    document.getElementById("ge-back").addEventListener("click", () => { ui.geval = null; renderAssessment(); });
+    const check = document.getElementById("ge-check");
+    if (check) check.addEventListener("click", () => {
+      g.show = true;
+      if (!g.saved) {
+        g.saved = true;
+        const percent = Math.round(correct / variant.questions.length * 100);
+        saveAttempt({ kind: "geval", variant: variant.n, topicKey: null, correct, total: variant.questions.length, percent });
+        addXp(20);
+      }
+      const y = window.scrollY;
+      renderAssessment();
+      window.scrollTo(0, y);
+    });
+    if (!g.show) {
+      view.querySelectorAll("[data-geo]").forEach((b) => b.addEventListener("click", () => {
+        g.answers[Number(b.dataset.gei)] = Number(b.dataset.geo);
+        const y = window.scrollY;
+        renderAssessment();
+        window.scrollTo(0, y);
+      }));
+    }
+  }
+
   function renderAssessment() {
     const data = S.load();
     const st = me(data);
+    if (ui.geval) return renderGeval(st);
     const a = ui.assess;
     if (!a) {
       const last = data.attempts.filter((x) => x.studentId === st.id && x.kind === "assessment").sort((x, y) => new Date(y.at) - new Date(x.at))[0];
       view.innerHTML = `
+        ${gevalHome()}
         <div class="grid grid-2-1">
           <div class="card"><div class="card-head">🎯 Оношлогоо</div><div class="card-body">
             <p style="margin-top:0">Математикийн түвшнээ тогтоох шалгалт. ${st.grade}-р анги болон түүнээс доош ангиудын сэдвээс асуулт гарна (6-р ангиас доош бууруулахгүй).</p>
@@ -897,6 +972,10 @@
         ui.assess = { items: buildAssessment(st.grade), answers: {}, i: 0, startedAt: Date.now(), done: false };
         renderAssessment();
       });
+      view.querySelectorAll("[data-ge]").forEach((b) => b.addEventListener("click", () => {
+        ui.geval = { variant: Number(b.dataset.ge), answers: {}, show: false, saved: false };
+        renderAssessment();
+      }));
       return;
     }
     if (a.done) return renderAssessmentResult(st, a);
@@ -1021,8 +1100,8 @@
       }),
       ...mine.map((a) => ({
         at: a.at,
-        type: { practice: "Дасгал", battle: "Battle", assessment: "Оношлогоо" }[a.kind],
-        title: a.kind === "assessment" ? `${a.placement}-р ангийн түвшин` : a.topicKey ? B.topicTitle(a.topicKey) : "Холимог сэдэв",
+        type: { practice: "Дасгал", battle: "Battle", assessment: "Оношлогоо", geval: "Жишиг тест" }[a.kind] || a.kind,
+        title: a.kind === "geval" ? `Хувилбар ${a.variant}` : a.kind === "assessment" ? `${a.placement}-р ангийн түвшин` : a.topicKey ? B.topicTitle(a.topicKey) : "Холимог сэдэв",
         score: a.kind === "battle" ? `${a.win ? "Ялалт" : "Ялагдал"} · ${a.correct}/${a.total}` : `${a.percent}%`,
         cls: a.kind === "battle" ? (a.win ? "pill-green" : "pill-muted") : S.scoreClass(a.percent),
       })),
