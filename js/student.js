@@ -30,7 +30,7 @@
 
   const view = document.getElementById("view");
   let cleanup = null;
-  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, ix1: {}, ix1Show: {}, lessonPart: "theory", example: null, mp: {}, mpShow: {}, mpLevel: "Мэдлэг, ойлголт" };
+  const ui = { topicKey: null, practice: null, task: null, battle: null, assess: null, ix1: {}, ix1Show: {}, lessonPart: "theory", example: null, mp: {}, mpShow: {}, mpLevel: "Мэдлэг, ойлголт", st: {}, stShow: {} };
 
   function getRank(xp) {
     if (xp >= 8000) return { name: "Mythical Glory", icon: "👑", next: null, nextXP: null, base: 8000 };
@@ -312,8 +312,8 @@
         n += 1;
         const p = practiceOf(t.key);
         const mats = myMaterials(data, st, t.key).length;
-        const mpN = mpCount(t.key);
-        return `<button type="button" class="item ${t.key === ui.topicKey ? "active" : ""}" data-topic="${t.key}"><div class="item-icon">${n}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${mpN ? `${mpN} бодлого · ` : ""}${mats ? `📘 ${mats} материал · ` : ""}${p == null ? "Дасгал хийгээгүй" : `Дасгал ${p}%`}</div></div></button>`;
+        const bankN = stCount(t.key) || mpCount(t.key);
+        return `<button type="button" class="item ${t.key === ui.topicKey ? "active" : ""}" data-topic="${t.key}"><div class="item-icon">${n}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${bankN ? `${bankN} даалгавар · ` : ""}${mats ? `📘 ${mats} материал · ` : ""}${p == null ? "Дасгал хийгээгүй" : `Дасгал ${p}%`}</div></div></button>`;
       }).join("");
       return `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${items}`;
     }).join("");
@@ -340,7 +340,12 @@
     const tabBtn = (id, label) => `<button type="button" class="${part === id ? "active" : ""}" data-part="${id}">${label}</button>`;
     let panel;
     if (part === "example") {
-      if (unit1 && window.IX1) {
+      const stu = stUnit(topic.key);
+      if (stu) {
+        const samples = [];
+        stu.criteria.forEach((c) => { const p = c.levels[0] && c.levels[0].problems[0]; if (p) samples.push(p); });
+        panel = samples.map((p) => stProblem(p, "example")).join("") || emptyBox("Жишээ алга", "");
+      } else if (unit1 && window.IX1) {
         const samples = [];
         window.IX1.criteria.forEach((c) => { const p = c.levels[0] && c.levels[0].problems[0]; if (p) samples.push(p); });
         panel = samples.map((p) => ix1Problem(p, "example")).join("") || emptyBox("Жишээ алга", "");
@@ -349,18 +354,23 @@
         panel = `<p class="hint">Жишээг бодолттой нь уншаад, дараа нь Даалгавар товчоор өөрөө бод.</p>${Q.questionCard(ui.example.q, 0, { reveal: true, picked: ui.example.q.answer, total: 1 })}`;
       }
     } else if (part === "task") {
+      const stu = stUnit(topic.key);
       const mp = mpUnit(topic.key);
+      const blocks = [];
+      if (stu) {
+        blocks.push(`<p class="hint">${esc(stu.name)} · ${stu.count} даалгавар. Бодоод <b>Бодолт</b> дээр дарж зөв хариутай тулга.</p>${stHtml(stu)}`);
+      }
       if (mp) {
         const lv = mp.levels.find((l) => l.name === ui.mpLevel) || mp.levels[0];
-        panel = `<p class="hint">${esc(mp.name)}. Танин мэдэхүйн түвшингээ сонгоод бод. Сонгосны дараа <b>Шалгах</b> дээр дар.</p>
+        blocks.push(`<h3 style="margin:18px 0 8px">Нэмэлт сонгох бодлого</h3>
+          <p class="hint">${esc(mp.name)}. Танин мэдэхүйн түвшингээ сонгоод бод. Сонгосны дараа <b>Шалгах</b> дээр дар.</p>
           <div class="seg">${mp.levels.map((l) => `<button type="button" class="${l.name === lv.name ? "active" : ""}" data-mplevel="${esc(l.name)}">${esc(l.name)} · ${l.problems.length}</button>`).join("")}</div>
-          ${lv.problems.map(mpProblem).join("")}
-          ${unit1 && window.IX1 ? `<h3 style="margin:18px 0 8px">Шалгуурт даалгавар</h3>${ix1Html("task")}` : ""}`;
-      } else {
-        panel = unit1 && window.IX1
-          ? `<p class="hint">Бодлогоо өөрөө бод. Дуусаад <b>Бодолт</b> дээр дарж зөв хариутай тулга.</p>${ix1Html("task")}`
-          : practiceHtml;
+          ${lv.problems.map(mpProblem).join("")}`);
       }
+      if (!stu && unit1 && window.IX1) {
+        blocks.push(`<p class="hint">Бодлогоо өөрөө бод. Дуусаад <b>Бодолт</b> дээр дарж зөв хариутай тулга.</p>${ix1Html("task")}`);
+      }
+      panel = blocks.length ? blocks.join("") : practiceHtml;
     } else {
       panel = `
         <h3 style="font-size:14px;margin-bottom:6px">Суралцахуйн зорилт</h3>
@@ -384,8 +394,9 @@
 
     view.querySelectorAll("[data-part]").forEach((b) => b.addEventListener("click", () => { ui.lessonPart = b.dataset.part; renderLesson(); }));
     view.querySelectorAll("[data-topic]").forEach((b) => b.addEventListener("click", () => { ui.topicKey = b.dataset.topic; ui.practice = null; ui.lessonPart = "theory"; renderLesson(); }));
+    if (part === "task" && stUnit(topic.key)) bindSt();
     if (part === "task" && mpUnit(topic.key)) bindMp();
-    if (part === "task" && unit1) bindIx1();
+    if (part === "task" && !stUnit(topic.key) && unit1) bindIx1();
     const startBtn = document.getElementById("start-practice");
     const begin = () => { ui.practice = { topicKey: topic.key, questions: B.buildQuestions({ grade: st.grade, topicKey: topic.key, count: 5 }), answers: {}, saved: false }; renderLesson(); };
     if (startBtn) startBtn.addEventListener("click", begin);
@@ -407,6 +418,64 @@
       renderChrome(S.load(), me());
       renderLesson();
       window.scrollTo(0, y);
+    }));
+  }
+
+  function stUnit(topicKey) {
+    if (!window.ST) return null;
+    return window.ST.units.find((u) => u.topics.includes(topicKey)) || null;
+  }
+
+  function stCount(topicKey) {
+    const u = stUnit(topicKey);
+    return u ? u.count : 0;
+  }
+
+  function stProblem(p, mode) {
+    const picked = ui.st[p.id];
+    const shown = mode === "example" || ui.stShow[p.id];
+    const text = esc(p.text).replaceAll("\n", "<br>");
+    const imgs = (p.images || []).map((src) => `<img src="${esc(src)}" alt="" style="max-width:100%;margin-top:8px">`).join("");
+    const choices = mode === "example"
+      ? ""
+      : p.options.length
+        ? `<div class="opts" style="margin-top:10px">${p.options.map((o) => `<button type="button" class="opt ${picked === o.letter ? "picked" : ""}" data-st="${esc(p.id)}" data-stletter="${o.letter}"><span class="key">${o.letter}</span><span>${esc(o.text)}</span></button>`).join("")}</div><button type="button" class="btn btn-sm" data-stcheck="${esc(p.id)}" style="margin-top:10px">Шалгах</button>`
+        : `<button type="button" class="btn btn-ghost btn-sm" data-stshow="${esc(p.id)}" style="margin-top:10px">Бодолт</button>`;
+    const mark = shown && p.correct && mode !== "example" ? (picked === p.correct ? `<span class="pill pill-green">Зөв</span>` : `<span class="pill pill-red">Буруу. Зөв нь ${esc(p.correct)}</span>`) : "";
+    const answer = shown ? `<div class="theory" style="margin-top:8px"><strong>Бодолт.</strong> ${esc(p.answer).replaceAll("\n", "<br>")}</div>` : "";
+    return `<div class="material"><div class="actions" style="justify-content:space-between"><div class="item-title">${esc(p.id)} · ${esc(p.title)}</div>${mark}</div><div style="margin-top:8px">${text}</div>${imgs}${choices}${answer}</div>`;
+  }
+
+  function stHtml(unit) {
+    return unit.criteria.map((c) => `
+      <div class="card mb">
+        <div class="card-head">${esc(c.name)}</div>
+        <div class="card-body">
+          ${c.levels.map((lv) => `<div class="nav-group" style="margin:14px 0 6px">${esc(lv.name)} · ${lv.problems.length}</div>${lv.problems.map((p) => stProblem(p, "task")).join("")}`).join("")}
+        </div>
+      </div>`).join("");
+  }
+
+  function bindSt() {
+    const unit = stUnit(ui.topicKey);
+    if (!unit) return;
+    const byId = {};
+    unit.criteria.forEach((c) => c.levels.forEach((lv) => lv.problems.forEach((p) => { byId[p.id] = p; })));
+    const keep = () => {
+      const y = window.scrollY;
+      renderLesson();
+      window.scrollTo(0, y);
+    };
+    view.querySelectorAll("[data-stletter]").forEach((b) => b.addEventListener("click", () => { ui.st[b.dataset.st] = b.dataset.stletter; keep(); }));
+    view.querySelectorAll("[data-stcheck]").forEach((b) => b.addEventListener("click", () => {
+      const p = byId[b.dataset.stcheck];
+      if (!p || !ui.st[p.id]) { S.toast("Хариултаа сонгоно уу"); return; }
+      ui.stShow[p.id] = true;
+      keep();
+    }));
+    view.querySelectorAll("[data-stshow]").forEach((b) => b.addEventListener("click", () => {
+      ui.stShow[b.dataset.stshow] = !ui.stShow[b.dataset.stshow];
+      keep();
     }));
   }
 
@@ -515,7 +584,7 @@
       view.innerHTML = `
         <div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Сэдэв дээр дарвал тухайн хичээлийн даалгавар нээгдэнэ. Тэнд Онол, Жишээ, Даалгавар гэж шилжинэ.</p></div>
         ${matsCard}
-        <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}&tab=task"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${mpCount(t.key) ? `${mpCount(t.key)} бодлого · ` : ""}${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
+        <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}&tab=task"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${(stCount(t.key) || mpCount(t.key)) ? `${stCount(t.key) || mpCount(t.key)} даалгавар · ` : ""}${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
       return;
     }
     const all = myAssignments(data, st);
