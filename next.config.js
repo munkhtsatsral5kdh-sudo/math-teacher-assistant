@@ -10,6 +10,7 @@ const nextConfig = {
     return {
       beforeFiles: [
         { source: "/", destination: "/index.html" },
+        { source: "/fizlab", destination: "/fizlab.html" },
         { source: "/teacher/:section", destination: "/teacher.html" },
         { source: "/student/:section", destination: "/student.html" },
       ],
