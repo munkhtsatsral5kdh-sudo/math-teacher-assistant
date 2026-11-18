@@ -4,83 +4,71 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Багшийн туслах · 6–9-р ангийн математик, физик</title>
-  <meta name="description" content="6–9-р ангийн математик, физик. Хичээл, сорил, даалгавар, виртуал лаборатори.">
+  <meta name="description" content="6–9-р ангийн сурагчдад зориулсан математик, физикийн хичээл, сорил, виртуал лаборатори.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/css/app.css?v=home2">
+  <link rel="stylesheet" href="/css/app.css?v=home3">
 </head>
-<body class="ih">
-  <header class="ih-bar">
-    <a class="ih-logo" href="/">Багшийн туслах<small>Математик · Физик</small></a>
-    <nav class="ih-nav" aria-label="Үндсэн цэс">
-      <a href="#math">Математик</a>
-      <a href="#physics">Физик</a>
-      <a href="/teacher/dashboard">Багш</a>
-      <a class="ih-enter" href="/student/dashboard">Сурагч орох</a>
-    </nav>
+<body class="kh">
+  <header class="kh-bar">
+    <a class="kh-logo" href="/">Багшийн туслах</a>
+    <a class="kh-teacher" href="/teacher/dashboard">👩‍🏫 Багш</a>
   </header>
 
-  <section class="ih-hero">
-    <p class="ih-kicker">6–9-р анги · Математик ба Физик</p>
-    <h1>Сурах ганц арга бол <span>бодох</span>, <span>туршиж үзэх</span>.</h1>
-    <p class="ih-lead">Хичээлээ сонгоод эхлээрэй. Утас, таблет, компьютерийн аль дээр ч ажиллана.</p>
+  <section class="kh-hero">
+    <h1>Сайн уу! 👋</h1>
+    <p>Өнөөдөр юу хийх вэ? <b>Нэгийг нь сонго.</b></p>
   </section>
 
-  <main class="ih-subjects">
-    <article class="ih-subject math" id="math">
-      <div class="ih-subject-head">
-        <span class="ih-subject-ico" aria-hidden="true">➗</span>
-        <div>
-          <h2>Математик</h2>
-          <p>Онол уншиж, жишээ үзэж, даалгавраа өөрөө бод.</p>
-        </div>
-      </div>
-      <div class="ih-links">
-        <a href="/student/lesson?tab=theory"><b>📘 Хичээл</b><span>Онол · Жишээ · Даалгавар</span></a>
-        <a href="/student/assessment"><b>🎯 Оношлогоо сорил</b><span>Өөрийн түвшнээ тогтоо</span></a>
-        <a href="/student/assignments"><b>✅ Даалгавар</b><span>Багшийн өгсөн ажил</span></a>
-        <a href="/student/stats"><b>📊 Миний дүн</b><span>Ахиц, алдаагаа хар</span></a>
-      </div>
-    </article>
-
-    <article class="ih-subject phys" id="physics">
-      <div class="ih-subject-head">
-        <span class="ih-subject-ico" aria-hidden="true">🔬</span>
-        <div>
-          <h2>Физик</h2>
-          <p>Виртуал лабораторид өөрөө туршилт хийж, хэмжиж, дүгнэ.</p>
-        </div>
-      </div>
-      <div class="ih-links">
-        <a href="/fizlab"><b>🧪 Виртуал лаборатори</b><span>Виртуал багш алхам бүрт тусална</span></a>
-        <a href="/fizlab"><b>🌍 6-р анги</b><span>Дэлхийн татах хүч, биеийн жин</span></a>
-        <a href="/fizlab"><b>🌡️ 7-р анги</b><span>Халуун, хүйтэн ба температур</span></a>
-        <a href="/fizlab"><b>⚙️ 8-р анги</b><span>Хөдлөх ба үл хөдлөх эргэвч</span></a>
-      </div>
-    </article>
+  <main class="kh-choices">
+    <a class="kh-big math" href="/student/dashboard">
+      <span class="kh-big-ico" aria-hidden="true">➗</span>
+      <span class="kh-big-title">МАТЕМАТИК</span>
+      <span class="kh-big-sub">Хичээл үзэж, бодлого бодно</span>
+      <span class="kh-go">Эхлэх →</span>
+    </a>
+    <a class="kh-big phys" href="/fizlab">
+      <span class="kh-big-ico" aria-hidden="true">🔬</span>
+      <span class="kh-big-title">ФИЗИК</span>
+      <span class="kh-big-sub">Лабораторид туршилт хийнэ</span>
+      <span class="kh-go">Эхлэх →</span>
+    </a>
   </main>
 
-  <section class="ih-how">
-    <h2>Хэн юу хийх вэ?</h2>
-    <div class="ih-how-grid">
-      <article>
-        <h3>👩‍🎓 Сурагч</h3>
-        <p>Ангиа сонгоод хичээлээ үз. Дасгал хийж XP цуглуул, сорил өгч дүнгээ хар. Физикийн лабораторид туршилт хий.</p>
-        <div class="ih-steps">
-          <a href="/student/dashboard">Сурагч орох</a>
-          <a href="/fizlab">Физик лаборатори</a>
-        </div>
-      </article>
-      <article>
-        <h3>👩‍🏫 Багш</h3>
-        <p>Анги үүсгэж, материал оруулж, даалгавар илгээ. Сурагчдын ахиц, дүнг нэг дороос хар.</p>
-        <div class="ih-steps">
-          <a href="/teacher/dashboard">Багш орох</a>
-          <a href="/teacher/content">Материал оруулах</a>
-        </div>
-      </article>
+  <section class="kh-quick">
+    <div class="kh-col">
+      <h2>➗ Математикт</h2>
+      <a href="/student/lesson?tab=theory"><span>📘</span>Хичээл үзэх</a>
+      <a href="/student/assessment"><span>🎯</span>Түвшнээ шалгах</a>
+      <a href="/student/battle"><span>⚔️</span>Battle тоглох</a>
+      <a href="/student/stats"><span>📊</span>Миний дүн</a>
+    </div>
+    <div class="kh-col">
+      <h2>🔬 Физикт: ангиа сонго</h2>
+      <a href="/fizlab" data-grade="6"><span>6</span>6-р анги</a>
+      <a href="/fizlab" data-grade="7"><span>7</span>7-р анги</a>
+      <a href="/fizlab" data-grade="8"><span>8</span>8-р анги</a>
+      <a href="/fizlab" data-grade="9"><span>9</span>9-р анги</a>
     </div>
   </section>
 
-  <footer class="ih-foot">Мөнгөнморьт сумын ЕБС · 6–9-р ангийн математик, физик</footer>
+  <section class="kh-how">
+    <h2>Яаж эхлэх вэ?</h2>
+    <ol>
+      <li><b>1</b><span>Математик эсвэл Физикийг сонго</span></li>
+      <li><b>2</b><span>Нэрээ бичээд ангиа сонго</span></li>
+      <li><b>3</b><span>Эхэл! Алдвал дахиад оролдоорой 💪</span></li>
+    </ol>
+  </section>
+
+  <footer class="kh-foot">Мөнгөнморьт сумын ЕБС · 6–9-р анги · <a href="/teacher/dashboard">Багшийн хэсэг</a></footer>
+
+  <script>
+    /* Физикийн анги сонгоход лабораторид тэр анги нь шууд нээгдэнэ */
+    document.querySelectorAll("[data-grade]").forEach(function (a) {
+      a.addEventListener("click", function () {
+        try { localStorage.setItem("fl_grade", a.getAttribute("data-grade")); } catch (e) {}
+      });
+    });
+  </script>
 </body>
 </html>
