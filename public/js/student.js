@@ -318,7 +318,7 @@
         const bankN = stCount(t.key) || mpCount(t.key);
         return `<button type="button" class="item ${t.key === ui.topicKey ? "active" : ""}" data-topic="${t.key}"><div class="item-icon">${n}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${bankN ? `${bankN} даалгавар · ` : ""}${mats ? `📘 ${mats} материал · ` : ""}${p == null ? "Дасгал хийгээгүй" : `Дасгал ${p}%`}</div></div></button>`;
       }).join("");
-      return `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${items}`;
+      return `<div class="list-group">${esc(unit.name)}</div>${items}`;
     }).join("");
 
     const units = B.unitsFor(topic.key).filter((u) => u.theory);
@@ -456,7 +456,7 @@
       <div class="card mb">
         <div class="card-head">${esc(c.name)}</div>
         <div class="card-body">
-          ${c.levels.map((lv) => `<div class="nav-group" style="margin:14px 0 6px">${esc(lv.name)} · ${lv.problems.length}</div>${lv.problems.map((p) => stProblem(p, "task")).join("")}`).join("")}
+          ${c.levels.map((lv) => `<div class="list-group">${esc(lv.name)} · ${lv.problems.length}</div>${lv.problems.map((p) => stProblem(p, "task")).join("")}`).join("")}
         </div>
       </div>`).join("");
   }
@@ -541,7 +541,7 @@
         <div class="card-head">${esc(c.name)}</div>
         <div class="card-body">
           ${c.outcome ? `<p class="hint" style="margin-top:0">${esc(c.outcome)}</p>` : ""}
-          ${c.levels.map((lv) => `<div class="nav-group" style="margin:14px 0 6px">${esc(lv.name)}</div>${lv.note ? `<p class="hint">${esc(lv.note)}</p>` : ""}${lv.problems.map((p) => ix1Problem(p, mode)).join("")}`).join("")}
+          ${c.levels.map((lv) => `<div class="list-group">${esc(lv.name)}</div>${lv.note ? `<p class="hint">${esc(lv.note)}</p>` : ""}${lv.problems.map((p) => ix1Problem(p, mode)).join("")}`).join("")}
         </div>
       </div>`).join("");
   }
@@ -589,7 +589,7 @@
       view.innerHTML = `
         <div class="view-head"><h1>${st.grade}-р ангийн даалгаврын сан</h1><p>Сэдэв дээр дарвал тухайн хичээлийн даалгавар нээгдэнэ. Тэнд Онол, Жишээ, Даалгавар гэж шилжинэ.</p></div>
         ${matsCard}
-        <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="nav-group" style="margin:12px 0 6px">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}&tab=task"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${(stCount(t.key) || mpCount(t.key)) ? `${stCount(t.key) || mpCount(t.key)} даалгавар · ` : ""}${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
+        <div class="card"><div class="card-body list">${B.contentUnits(st.grade).map((unit) => `<div class="list-group">${esc(unit.name)}</div>${unit.topics.map((t, i) => `<a class="item" href="/student/lesson?topic=${encodeURIComponent(t.key)}&tab=task"><div class="item-icon">${i + 1}</div><div class="item-main"><div class="item-title">${esc(B.niceTitle(t.title))}</div><div class="item-sub">${(stCount(t.key) || mpCount(t.key)) ? `${stCount(t.key) || mpCount(t.key)} даалгавар · ` : ""}${esc(t.level)}</div></div></a>`).join("")}`).join("")}</div></div>`;
       return;
     }
     const all = myAssignments(data, st);
